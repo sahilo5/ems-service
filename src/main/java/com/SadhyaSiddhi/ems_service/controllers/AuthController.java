@@ -49,8 +49,12 @@ public class AuthController {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtGenerator.generateToken(authentication);
+        String userRole = authentication.getAuthorities().stream()
+                .findFirst()
+                .map(Object::toString)
+                .orElse("USER"); // Default role if none found
 
-        return new ResponseEntity<>(new AuthResponseDto(token,loginDto.getUsername()), HttpStatus.OK);
+        return new ResponseEntity<>(new AuthResponseDto(token,loginDto.getUsername(), userRole), HttpStatus.OK);
     }
 
     @PostMapping("register")
