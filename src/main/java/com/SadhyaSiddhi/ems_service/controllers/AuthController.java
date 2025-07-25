@@ -52,7 +52,7 @@ public class AuthController {
         String userRole = authentication.getAuthorities().stream()
                 .findFirst()
                 .map(Object::toString)
-                .orElse("USER"); // Default role if none found
+                .orElse("USER");
 
         return new ResponseEntity<>(new AuthResponseDto(token,loginDto.getUsername(), userRole), HttpStatus.OK);
     }

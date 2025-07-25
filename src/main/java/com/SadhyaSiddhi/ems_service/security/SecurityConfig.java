@@ -38,9 +38,10 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**","/index.html").permitAll()
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/user/**").hasAuthority("USER")
+                        .requestMatchers("/api/auth/**","/index.html","/api/user/fullName/{username}").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/user/**").hasAuthority("USER")
+                        .requestMatchers("/api/employee/**").hasAuthority("EMPLOYEE")
                         .anyRequest().authenticated()
                 ).formLogin(Customizer.withDefaults());
 
