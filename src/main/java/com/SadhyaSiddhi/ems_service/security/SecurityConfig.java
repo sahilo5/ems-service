@@ -38,8 +38,9 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**","/index.html","/api/user/fullName/{username}").permitAll()
-                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/auth/resetPassword/**").authenticated()
+                        .requestMatchers("/api/auth/**","/index.html").permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN","USER","EMPLOYEE")
                         .requestMatchers("/api/user/**").hasAuthority("USER")
                         .requestMatchers("/api/employee/**").hasAuthority("EMPLOYEE")
                         .anyRequest().authenticated()

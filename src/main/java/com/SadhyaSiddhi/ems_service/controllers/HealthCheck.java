@@ -17,4 +17,9 @@ public class HealthCheck {
     public String healthCheckAdmin() {
         return "Admin Service is up and running!";
     }
+
+    @GetMapping("/employee/health")
+    public String healthCheckEmployee() {
+        return "Admin Service is up and running!";
+    }
 }
