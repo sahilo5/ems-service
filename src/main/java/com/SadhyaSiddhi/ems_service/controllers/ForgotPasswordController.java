@@ -104,6 +104,19 @@ public class ForgotPasswordController {
         return ResponseEntity.ok("Password reset successfully.");
     }
 
+    @PostMapping("/resendOtp/{username}")
+    public ResponseEntity<String> resendOtp(@PathVariable String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
+
+        // Check if an OTP already exists for the user
+        ForgotPassword existingForgotPassword = forgotPasswordRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new CustomAuthenticationException("No OTP found for user: " + username));
+
+        forgotPasswordRepository.deleteByUsername(user.getUsername());
+        return forgotPassword(username);
+    }
+
     private Integer generateOtp() {
         return (int) (Math.random() * 9000) + 1000; // Generates a 4-digit OTP
     }
