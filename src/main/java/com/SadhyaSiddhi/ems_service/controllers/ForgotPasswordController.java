@@ -1,5 +1,6 @@
 package com.SadhyaSiddhi.ems_service.controllers;
 
+import com.SadhyaSiddhi.ems_service.dto.ForgotPasswordDto;
 import com.SadhyaSiddhi.ems_service.dto.MailBodyDto;
 import com.SadhyaSiddhi.ems_service.dto.ResetPasswordDto;
 import com.SadhyaSiddhi.ems_service.exceptions.CustomAuthenticationException;
@@ -45,7 +46,7 @@ public class ForgotPasswordController {
     private AuthenticationManager authenticationManager;
 
     @PostMapping("/forgotPassword/{username}")
-    public ResponseEntity<String> forgotPassword(@PathVariable  String username){
+    public ResponseEntity<ForgotPasswordDto> forgotPassword(@PathVariable  String username){
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
 
@@ -64,13 +65,21 @@ public class ForgotPasswordController {
                 .build();
 
         emailService.sendSimpleEmail(mailBody);
+
+        if (forgotPasswordRepository.findByUserId(user.getId()).isPresent()) {
+            forgotPasswordRepository.deleteByUsername(user.getUsername());
+        }
         forgotPasswordRepository.save(forgotPassword);
 
-        return ResponseEntity.ok("OTP sent to your email successfully.");
+        ForgotPasswordDto forgotPasswordDto = ForgotPasswordDto.builder()
+                .message("OTP sent to your email successfully.")
+                .build();
+
+        return ResponseEntity.ok( forgotPasswordDto );
     }
 
     @PostMapping("/verifyOtp/{username}/{otp}")
-    private ResponseEntity<String> verifyOtp(@PathVariable  String username,@PathVariable Integer otp) {
+    private ResponseEntity<ForgotPasswordDto> verifyOtp(@PathVariable  String username,@PathVariable Integer otp) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
 
@@ -79,7 +88,7 @@ public class ForgotPasswordController {
 
         if (forgotPassword.getExpirationTime().before(Date.from(java.time.Instant.now()))) {
             forgotPasswordRepository.deleteByUsername(user.getUsername());
-            return ResponseEntity.badRequest().body("OTP has expired. Please request a new OTP.");
+            throw new CustomAuthenticationException("OTP has expired. Please request a new OTP.");
         }
 
         UsernamePasswordAuthenticationToken authToken =
@@ -89,29 +98,36 @@ public class ForgotPasswordController {
 
         String jwtToken = jwtGenerator.generateToken(authToken);
 
+        ForgotPasswordDto forgotPasswordDto = ForgotPasswordDto.builder()
+                .token(jwtToken)
+                .build();
         forgotPasswordRepository.deleteByUsername(user.getUsername());
-        return ResponseEntity.ok( jwtToken );
+        return ResponseEntity.ok( forgotPasswordDto );
     }
 
     @PostMapping("/resetPassword/{username}")
-    public ResponseEntity<String> resetPassword(@PathVariable String username,@RequestBody ResetPasswordDto resetPasswordDto) {
+    public ResponseEntity<ForgotPasswordDto> resetPassword(@PathVariable String username,@RequestBody ResetPasswordDto resetPasswordDto) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
 
         user.setPassword(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
         userRepository.save(user);
 
-        return ResponseEntity.ok("Password reset successfully.");
+        ForgotPasswordDto forgotPasswordDto = ForgotPasswordDto.builder()
+                .message("Password reset successfully.")
+                .build();
+
+        return ResponseEntity.ok(forgotPasswordDto);
     }
 
     @PostMapping("/resendOtp/{username}")
-    public ResponseEntity<String> resendOtp(@PathVariable String username) {
+    public ResponseEntity<ForgotPasswordDto> resendOtp(@PathVariable String username) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
 
-        // Check if an OTP already exists for the user
-        ForgotPassword existingForgotPassword = forgotPasswordRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new CustomAuthenticationException("No OTP found for user: " + username));
+        if (forgotPasswordRepository.findByUserId(user.getId()).isEmpty()) {
+            return forgotPassword(username);
+        }
 
         forgotPasswordRepository.deleteByUsername(user.getUsername());
         return forgotPassword(username);

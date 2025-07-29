@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPhoneNumber(registerDto.getPhoneNumber());
 
         Role role = roleRepository.findByName("USER").orElseThrow(() ->
-                new RuntimeException("Default role USER not found"));
+                new CustomAuthenticationException("Default role USER not found"));
 
         user.setRoles(Collections.singletonList(role));
 

@@ -40,9 +40,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/resetPassword/**").authenticated()
                         .requestMatchers("/api/auth/**","/index.html").permitAll()
-                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN","USER","EMPLOYEE")
-                        .requestMatchers("/api/user/**").hasAuthority("USER")
-                        .requestMatchers("/api/employee/**").hasAuthority("EMPLOYEE")
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN","USER")
+                        .requestMatchers("/api/employee/**").hasAnyAuthority("EMPLOYEE", "ADMIN")
                         .anyRequest().authenticated()
                 ).formLogin(Customizer.withDefaults());
 

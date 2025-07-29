@@ -36,11 +36,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> registerUser(@RequestBody RegisterDto registerDto) {
         ApiResponse<String> response = authService.registerUser(registerDto);
-
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
         }
-
         return ResponseEntity.ok(response);
     }
 
