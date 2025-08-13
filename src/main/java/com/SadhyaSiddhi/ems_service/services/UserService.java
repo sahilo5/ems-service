@@ -1,6 +1,7 @@
 package com.SadhyaSiddhi.ems_service.services;
 
 import com.SadhyaSiddhi.ems_service.dto.RegisterDto;
+import com.SadhyaSiddhi.ems_service.dto.UserDto;
 import com.SadhyaSiddhi.ems_service.dto.UserFullNameDto;
 import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
 
@@ -15,5 +16,7 @@ public interface UserService {
 
     public Boolean updateUserDetailsByUsername(String username, RegisterDto updateUserDto);
 
-    public Boolean deleteUser(String username);
+    public Boolean deleteUsers(List<String>
+                                       usernames);
+    public List<UserDto> getAllUsersWithRoles();
 }

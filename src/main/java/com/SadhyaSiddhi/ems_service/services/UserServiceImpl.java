@@ -1,6 +1,7 @@
 package com.SadhyaSiddhi.ems_service.services;
 
 import com.SadhyaSiddhi.ems_service.dto.RegisterDto;
+import com.SadhyaSiddhi.ems_service.dto.UserDto;
 import com.SadhyaSiddhi.ems_service.dto.UserFullNameDto;
 import com.SadhyaSiddhi.ems_service.exceptions.CustomAuthenticationException;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
@@ -78,7 +79,6 @@ public class UserServiceImpl implements UserService {
 
         int updated = userRepository.updateUserDetailsByUsername(
                 updateUserDto.getUsername(),
-                updateUserDto.getPassword(),
                 updateUserDto.getEmail(),
                 updateUserDto.getFirstName(),
                 updateUserDto.getLastName(),
@@ -91,17 +91,38 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean deleteUser(String username) {
-        UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+    public Boolean deleteUsers(List<String> usernames) {
+        boolean allDeleted = true;
+        for (String username : usernames) {
+            try {
+                UserEntity user = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new UserNotFoundException(username));
 
-        user.getRoles().clear();
-        userRepository.save(user);
+                user.getRoles().clear();
+                userRepository.save(user);
 
-        userRepository.delete(user);
-        return true;
-
+                userRepository.delete(user);
+            } catch (UserNotFoundException e) {
+                allDeleted = false;
+            }
+        }
+        return allDeleted;
     }
+
+    @Override
+    public List<UserDto> getAllUsersWithRoles() {
+        List<UserEntity> users = userRepository.findAllUsersWithRoles();
+
+        return users.stream().map(user -> new UserDto(
+                user.getFirstName(),
+                user.getLastName(),
+                user.getUsername(),
+                user.getRoles().stream().map(Role::getName).toList()
+        )).toList();
+    }
+
+
+
 
 }
 

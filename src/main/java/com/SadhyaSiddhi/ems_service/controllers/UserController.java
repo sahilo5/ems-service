@@ -1,6 +1,8 @@
 package com.SadhyaSiddhi.ems_service.controllers;
 
+import com.SadhyaSiddhi.ems_service.dto.BulkDeleteRequestDto;
 import com.SadhyaSiddhi.ems_service.dto.RegisterDto;
+import com.SadhyaSiddhi.ems_service.dto.UserDto;
 import com.SadhyaSiddhi.ems_service.dto.UserFullNameDto;
 import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
 import com.SadhyaSiddhi.ems_service.services.UserService;
@@ -34,7 +36,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/getUserByUsername/{username}")
+    @PostMapping ("/user/getUserByUsername/{username}")
     public ApiResponse<RegisterDto> getUserByUsername(@PathVariable String username){
         if(userService.getUserByUsername(username) == null) {
             return new ApiResponse<>(false, "User not found", null);
@@ -53,13 +55,20 @@ public class UserController {
         }
     }
 
-    @DeleteMapping("/admin/deleteUser/{username}")
-    public ApiResponse<String> deleteUser(@PathVariable String username) {
-        if(userService.deleteUser(username)) {
-            return new ApiResponse<>(true, "User deleted successfully", null);
+    @PostMapping("/admin/deleteUsers")
+    public ApiResponse<String> deleteUsers(@RequestBody BulkDeleteRequestDto request) {
+        boolean allDeleted = userService.deleteUsers(request.getUsers());
+        if (allDeleted) {
+            return new ApiResponse<>(true, "All users deleted successfully", null);
         } else {
-            return new ApiResponse<>(false, "User not found", null);
+            return new ApiResponse<>(false, "Some users could not be deleted", null);
         }
     }
+
+    @GetMapping("/admin/getAllUsersWithRoles")
+    public ApiResponse<List<UserDto>> getAllUsersWithRole() {
+        return new ApiResponse<>(true, "Users fetched successfully", userService.getAllUsersWithRoles());
+    }
+
 
 }
