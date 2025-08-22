@@ -1,6 +1,5 @@
-package com.SadhyaSiddhi.ems_service.repository;
+package com.SadhyaSiddhi.ems_service.repositories;
 
-import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;

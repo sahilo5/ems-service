@@ -3,18 +3,15 @@ package com.SadhyaSiddhi.ems_service.services;
 import com.SadhyaSiddhi.ems_service.dto.RegisterDto;
 import com.SadhyaSiddhi.ems_service.dto.UserDto;
 import com.SadhyaSiddhi.ems_service.dto.UserFullNameDto;
-import com.SadhyaSiddhi.ems_service.exceptions.CustomAuthenticationException;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
-import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
-import com.SadhyaSiddhi.ems_service.repository.RoleRepository;
-import com.SadhyaSiddhi.ems_service.repository.UserRepository;
+import com.SadhyaSiddhi.ems_service.repositories.RoleRepository;
+import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service

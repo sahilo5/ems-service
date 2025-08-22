@@ -1,7 +1,6 @@
-package com.SadhyaSiddhi.ems_service.repository;
+package com.SadhyaSiddhi.ems_service.repositories;
 
 import com.SadhyaSiddhi.ems_service.models.ForgotPassword;
-import com.SadhyaSiddhi.ems_service.models.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

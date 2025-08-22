@@ -1,4 +1,4 @@
-package com.SadhyaSiddhi.ems_service.repository;
+package com.SadhyaSiddhi.ems_service.repositories;
 
 
 import com.SadhyaSiddhi.ems_service.models.Role;

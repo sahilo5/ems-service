@@ -2,7 +2,7 @@ package com.SadhyaSiddhi.ems_service.security;
 
 import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
-import com.SadhyaSiddhi.ems_service.repository.UserRepository;
+import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

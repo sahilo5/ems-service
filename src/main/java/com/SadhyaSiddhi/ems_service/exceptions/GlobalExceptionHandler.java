@@ -46,4 +46,20 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(InvalidQrTokenException.class)
+    public ResponseEntity<String> handleInvalidQrToken(InvalidQrTokenException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(AttendanceCompletedException.class)
+    public ResponseEntity<String> handleAttendanceCompleted(AttendanceCompletedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(TooFrequentScanException.class)
+    public ResponseEntity<String> TooFrequentScanException(TooFrequentScanException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
 }

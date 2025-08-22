@@ -4,14 +4,13 @@ import com.SadhyaSiddhi.ems_service.exceptions.RoleNotFoundException;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
-import com.SadhyaSiddhi.ems_service.repository.RoleRepository;
-import com.SadhyaSiddhi.ems_service.repository.UserRepository;
+import com.SadhyaSiddhi.ems_service.repositories.RoleRepository;
+import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class RoleServiceImpl implements RoleService {
