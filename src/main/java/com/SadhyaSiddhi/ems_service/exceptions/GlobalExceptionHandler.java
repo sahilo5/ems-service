@@ -48,18 +48,39 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidQrTokenException.class)
-    public ResponseEntity<String> handleInvalidQrToken(InvalidQrTokenException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    public ResponseEntity<ApiResponse<Object>> handleInvalidQrToken(InvalidQrTokenException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                HttpStatus.BAD_REQUEST.value(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(AttendanceCompletedException.class)
-    public ResponseEntity<String> handleAttendanceCompleted(AttendanceCompletedException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    public ResponseEntity<ApiResponse<Object>> handleAttendanceCompleted(AttendanceCompletedException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                HttpStatus.CONFLICT.value(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(TooFrequentScanException.class)
-    public ResponseEntity<String> TooFrequentScanException(TooFrequentScanException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    public ResponseEntity<ApiResponse<Object>> handleTooFrequentScanException(TooFrequentScanException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                HttpStatus.CONFLICT.value(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
 }

@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/resetPassword/**").authenticated()
                         .requestMatchers("/api/auth/**","/index.html").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN","USER")
+                        .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN","USER","EMPLOYEE")
                         .requestMatchers("/api/employee/**").hasAnyAuthority("EMPLOYEE", "ADMIN")
                         .anyRequest().authenticated()
                 ).formLogin(Customizer.withDefaults());

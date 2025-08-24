@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
@@ -16,4 +17,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findForUpdate(@Param("userId") Long userId, @Param("date") LocalDate date);
 
     Optional<Attendance> findByUserAndDate(UserEntity user, LocalDate date);
+
+    List<Attendance> findByUserAndDateBetween(UserEntity user, LocalDate startDate, LocalDate endDate);
+
 }

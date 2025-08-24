@@ -45,7 +45,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/admin/updateUser/{username}")
+    @PostMapping("/user/updateUser/{username}")
     public ApiResponse<RegisterDto> updateUser(@PathVariable String username, @RequestBody RegisterDto updateUserDto) {
         userService.updateUserDetailsByUsername(username, updateUserDto);
         if(!userService.updateUserDetailsByUsername(username, updateUserDto)) {
