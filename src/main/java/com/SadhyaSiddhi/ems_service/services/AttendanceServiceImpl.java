@@ -4,14 +4,13 @@ package com.SadhyaSiddhi.ems_service.services;
 import com.SadhyaSiddhi.ems_service.dto.AttendanceRequest;
 import com.SadhyaSiddhi.ems_service.exceptions.AttendanceCompletedException;
 import com.SadhyaSiddhi.ems_service.exceptions.InvalidQrTokenException;
-import com.SadhyaSiddhi.ems_service.models.Attendance;
-import com.SadhyaSiddhi.ems_service.models.AttendanceStatus;
-import com.SadhyaSiddhi.ems_service.models.MarkedBy;
-import com.SadhyaSiddhi.ems_service.models.UserEntity;
+import com.SadhyaSiddhi.ems_service.models.*;
 import com.SadhyaSiddhi.ems_service.payload.AttendanceDayResponse;
 import com.SadhyaSiddhi.ems_service.repositories.AttendanceRepository;
 import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.transaction.Transactional;
@@ -21,10 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +37,9 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Autowired
     private AttendanceRepository attendanceRepository;
 
+    @Autowired
+    private AppSettingServiceImpl appSettingService;
+
     public AttendanceServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -54,7 +53,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         return Jwts.builder()
                 .setSubject("attendance-qr")
                 .setId(java.util.UUID.randomUUID().toString())
-                .claim("slot", now.getEpochSecond() /30)
+                .claim("slot", now.getEpochSecond() / 30)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(30)))
                 .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, JWT_SECRET.getBytes())
@@ -98,10 +97,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                 attendance = new Attendance();
                 attendance.setUser(user);
                 attendance.setDate(today);
-                attendance.setStatus(AttendanceStatus.PRESENT);
                 attendance.setMarkedBy(MarkedBy.SELF_QR);
             }
             attendance.setCheckInTime(LocalDateTime.now());
+            attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "checkin"));
             attendanceRepository.save(attendance);
 
             return new ApiResponse<>(
@@ -121,6 +120,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
 
             attendance.setCheckOutTime(LocalDateTime.now());
+            attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "checkout"));
             attendanceRepository.save(attendance);
 
             return new ApiResponse<>(
@@ -152,10 +152,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                 attendance = new Attendance();
                 attendance.setUser(user);
                 attendance.setDate(today);
-                attendance.setStatus(AttendanceStatus.PRESENT);
                 attendance.setMarkedBy(MarkedBy.ADMIN);
             }
             attendance.setCheckInTime(LocalDateTime.now());
+            attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "checkin"));
             attendanceRepository.save(attendance);
 
             return new ApiResponse<>(true,
@@ -173,6 +173,7 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
 
             attendance.setCheckOutTime(LocalDateTime.now());
+            attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "checkout"));
             attendance.setMarkedBy(MarkedBy.ADMIN);
             attendanceRepository.save(attendance);
 
@@ -195,7 +196,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         attendance.setUser(user);
         attendance.setDate(date);
-        attendance.setStatus(AttendanceStatus.PRESENT);
+        attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "update"));
         attendance.setMarkedBy(MarkedBy.ADMIN);
 
         if (checkIn != null) attendance.setCheckInTime(checkIn);
@@ -276,5 +277,68 @@ public class AttendanceServiceImpl implements AttendanceService {
         }).collect(Collectors.toList());
     }
 
+
+    private AttendanceStatus getAttendanceStatus(LocalDateTime checkIn, LocalDateTime checkOut, String action) {
+
+        try {
+            AppSetting inSetting = appSettingService.getSetting(2L);
+            AppSetting outSetting = appSettingService.getSetting(3L);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode inNode = mapper.readTree(inSetting.getData());
+            JsonNode outNode = mapper.readTree(outSetting.getData());
+
+            String checkInStr = inNode.get("value").asText();  // "09:30"
+            String checkOutStr = outNode.get("value").asText(); // "18:00"
+
+            LocalTime officeCheckIn = LocalTime.parse(checkInStr);
+            LocalTime officeCheckOut = LocalTime.parse(checkOutStr);
+
+            if (action.equals("checkin")) {
+                LocalTime checkInTime = checkIn.toLocalTime();
+                if (checkInTime.isAfter(officeCheckIn.plusMinutes(15))) {
+                    return AttendanceStatus.LATE;
+                }
+                return AttendanceStatus.UNMARKED;
+            }
+
+            if (action.equals("checkout")) {
+                long hours = Duration.between(checkIn, checkOut).toHours();
+
+                if (hours < 4) {
+                    return AttendanceStatus.HALF_DAY;
+                }
+
+                return AttendanceStatus.PRESENT;
+            }
+
+            if (action.equals("update")) {
+                if (checkIn != null && checkOut != null) {
+                    long hours = Duration.between(checkIn, checkOut).toHours();
+                    if (hours >= 4) {
+                        return AttendanceStatus.PRESENT;
+                    } else {
+                        return AttendanceStatus.HALF_DAY;
+                    }
+                } else if (checkIn != null) {
+                    LocalTime checkInTime = checkIn.toLocalTime();
+                    if (checkInTime.isAfter(officeCheckIn.plusMinutes(15))) {
+                        return AttendanceStatus.LATE;
+                    }
+                    return AttendanceStatus.UNMARKED;
+                } else if (checkOut != null) {
+                    return AttendanceStatus.UNMARKED;
+                } else {
+                    return AttendanceStatus.ABSENT;
+                }
+            }
+
+
+        } catch (Exception e) {
+            return AttendanceStatus.ABSENT;
+        }
+
+        return AttendanceStatus.ABSENT;
+    }
 
 }

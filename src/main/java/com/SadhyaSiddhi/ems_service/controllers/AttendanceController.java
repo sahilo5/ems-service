@@ -46,7 +46,7 @@ public class AttendanceController {
         return response;
     }
 
-    @PostMapping("/admin/attendance/manual")
+    @PostMapping("/admin/attendance/mark")
     public ApiResponse<Object> markAttendanceManual(@RequestBody Map<String, String> requestBody) {
         String username = requestBody.get("username");
         String inOrOut = requestBody.get("inOrOut");

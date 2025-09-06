@@ -12,10 +12,6 @@ import java.util.Optional;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Attendance a where a.user.id = :userId and a.date = :date")
-    Optional<Attendance> findForUpdate(@Param("userId") Long userId, @Param("date") LocalDate date);
-
     Optional<Attendance> findByUserAndDate(UserEntity user, LocalDate date);
 
     List<Attendance> findByUserAndDateBetween(UserEntity user, LocalDate startDate, LocalDate endDate);
