@@ -94,5 +94,16 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
+    @ExceptionHandler(SettingNotConfiguredProperlyException.class)
+    public ResponseEntity<ApiResponse<Object>> handleSettingNotConfiguredProperlyException(SettingNotConfiguredProperlyException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(
+                false,
+                ex.getMessage(),
+                null,
+                HttpStatus.CONFLICT.value(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
 
 }

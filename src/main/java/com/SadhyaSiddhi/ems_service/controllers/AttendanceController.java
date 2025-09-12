@@ -28,7 +28,7 @@ public class AttendanceController {
      */
     @GetMapping("/admin/attendance/generate-qr")
     public ResponseEntity<ApiResponse<Object>> generateQr() {
-        String qrToken = attendanceService.generateQrToken();
+        Map<String, Object> qrToken = attendanceService.generateQrToken();
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "QR Token generated", qrToken, 200, java.time.LocalDateTime.now())
         );

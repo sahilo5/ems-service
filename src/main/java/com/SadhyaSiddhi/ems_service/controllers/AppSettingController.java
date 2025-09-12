@@ -45,4 +45,12 @@ public class AppSettingController {
         service.deleteSetting(id);
         return new ApiResponse<>(true, "Setting deleted successfully", null);
     }
+
+    // 6. Get all settings by category
+    @GetMapping("/category/{category}")
+    public ApiResponse<List<AppSetting>> getSettingsByCategory(@PathVariable String category) {
+        return new ApiResponse<>(true,
+                "Settings for category '" + category + "' fetched successfully",
+                service.getSettingsByCategory(category));
+    }
 }

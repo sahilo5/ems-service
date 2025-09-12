@@ -46,4 +46,13 @@ public class AppSettingServiceImpl implements AppSettingService {
     public List<AppSetting> getAllSettings() {
         return repository.findAll();
     }
+
+    @Override
+    public List<AppSetting> getSettingsByCategory(String category) {
+        List<AppSetting> settings = repository.findByCategoryIgnoreCase(category);
+        if (settings.isEmpty()) {
+            throw new ResourceNotFoundException("No settings found for category: " + category);
+        }
+        return settings;
+    }
 }

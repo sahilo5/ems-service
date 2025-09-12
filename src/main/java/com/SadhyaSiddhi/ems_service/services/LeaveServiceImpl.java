@@ -29,6 +29,9 @@ public class LeaveServiceImpl implements LeaveService {
     @Autowired
     private AttendanceRepository attendanceRepository;
 
+    @Autowired
+    private  SmsService smsService;
+
     // Employee applies for leave
     public ApiResponse<Object> applyLeave(LeaveRequest leaveRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -184,6 +187,7 @@ public class LeaveServiceImpl implements LeaveService {
                     attendanceRepository.save(attendance);
                 }
             }
+            smsService.sendSms(Long.toString(user.getPhoneNumber()), "Hi " + user.getUsername() + ", your leave has been approved. ");
         }
 
         return new ApiResponse<>(true, "Leave status updated", leave.getLeaveId(),

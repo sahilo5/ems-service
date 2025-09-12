@@ -4,6 +4,7 @@ package com.SadhyaSiddhi.ems_service.services;
 import com.SadhyaSiddhi.ems_service.dto.AttendanceRequest;
 import com.SadhyaSiddhi.ems_service.exceptions.AttendanceCompletedException;
 import com.SadhyaSiddhi.ems_service.exceptions.InvalidQrTokenException;
+import com.SadhyaSiddhi.ems_service.exceptions.SettingNotConfiguredProperlyException;
 import com.SadhyaSiddhi.ems_service.models.*;
 import com.SadhyaSiddhi.ems_service.payload.AttendanceDayResponse;
 import com.SadhyaSiddhi.ems_service.repositories.AttendanceRepository;
@@ -21,10 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,17 +45,40 @@ public class AttendanceServiceImpl implements AttendanceService {
     /**
      * Generate QR Token for admin dashboard (rotates every 15s)
      */
-    public String generateQrToken() {
+    public Map<String, Object> generateQrToken() {
         Instant now = Instant.now();
+        int duration = 30;
 
-        return Jwts.builder()
+        try {
+
+            AppSetting setting = appSettingService.getSetting(5L);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(setting.getData());
+            String qrExpiryDuration = node.get("value").asText();
+
+            if (qrExpiryDuration != null && !qrExpiryDuration.isEmpty()) {
+                duration = Integer.parseInt(qrExpiryDuration);
+                now = now.minusSeconds(now.getEpochSecond() % duration);
+            }
+        } catch (Exception e) {
+            throw new SettingNotConfiguredProperlyException("Settings not configured properly.");
+        }
+
+        String qrToken = Jwts.builder()
                 .setSubject("attendance-qr")
-                .setId(java.util.UUID.randomUUID().toString())
-                .claim("slot", now.getEpochSecond() / 30)
+                .setId(UUID.randomUUID().toString())
+                .claim("slot", now.getEpochSecond() / duration)
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusSeconds(30)))
+                .setExpiration(Date.from(now.plusSeconds(duration)))
                 .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, JWT_SECRET.getBytes())
                 .compact();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("qrToken", qrToken);
+        response.put("expiryDuration", duration);
+
+        return response;
     }
 
     /**

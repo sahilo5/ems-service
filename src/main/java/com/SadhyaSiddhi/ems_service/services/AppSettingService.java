@@ -14,4 +14,6 @@ public interface AppSettingService {
     public void deleteSetting(Long id);
 
     public List<AppSetting> getAllSettings();
+
+    List<AppSetting> getSettingsByCategory(String category);
 }

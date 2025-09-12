@@ -12,7 +12,7 @@ import java.util.Map;
 
 public interface AttendanceService {
 
-    public String generateQrToken() ;
+    public Map<String, Object> generateQrToken() ;
 
     public ApiResponse<Object> markAttendance(String qrToken, String inOrOut);
 
