@@ -34,7 +34,7 @@ public class AppSettingController {
     }
 
     // 4. Update setting
-    @PutMapping("/update/{id}")
+    @PostMapping("/update/{id}")
     public ApiResponse<AppSetting> updateSetting(@PathVariable Long id, @RequestBody AppSetting newSetting) {
         return new ApiResponse<>(true, "Setting updated successfully", service.updateSetting(id, newSetting));
     }

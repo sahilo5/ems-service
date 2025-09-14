@@ -217,7 +217,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         attendance.setUser(user);
         attendance.setDate(date);
-        attendance.setStatus(getAttendanceStatus(attendance.getCheckInTime(), attendance.getCheckOutTime(), "update"));
+        attendance.setStatus(getAttendanceStatus(checkIn, checkOut, "update"));
         attendance.setMarkedBy(MarkedBy.ADMIN);
 
         if (checkIn != null) attendance.setCheckInTime(checkIn);

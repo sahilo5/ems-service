@@ -27,12 +27,24 @@ public class AppSettingServiceImpl implements AppSettingService {
         AppSetting existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("AppSetting not found with id: " + id));
 
-        existing.setKey(newSetting.getKey());
-        existing.setTitle(newSetting.getTitle());
-        existing.setDescription(newSetting.getDescription());
-        existing.setCategory(newSetting.getCategory());
-        existing.setDataType(newSetting.getDataType());
-        existing.setData(newSetting.getData());
+        if(newSetting.getKey()!=null){
+            existing.setKey(newSetting.getKey());
+        }
+        if(newSetting.getTitle()!=null){
+            existing.setTitle(newSetting.getTitle());
+        }
+        if(newSetting.getDescription()!=null){
+            existing.setDescription(newSetting.getDescription());
+        }
+        if(newSetting.getCategory()!=null){
+            existing.setCategory(newSetting.getCategory());
+        }
+        if(newSetting.getDataType()!=null){
+            existing.setDataType(newSetting.getDataType());
+        }
+        if(newSetting.getData()!=null){
+            existing.setData(newSetting.getData());
+        }
 
         return repository.save(existing);
     }
