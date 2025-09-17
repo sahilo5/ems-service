@@ -9,32 +9,32 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/settings")
+@RequestMapping("/api")
 public class AppSettingController {
 
     @Autowired
     private AppSettingService service;
 
     // 1. Get all settings
-    @GetMapping("/getAllSettings")
+    @GetMapping("/admin/settings/getAllSettings")
     public ApiResponse<List<AppSetting>> getAllSettings() {
         return new ApiResponse<>(true, "All settings fetched successfully", service.getAllSettings());
     }
 
     // 2. Get particular setting by id
-    @GetMapping("/{id}")
+    @GetMapping("/user/settings/{id}")
     public ApiResponse<AppSetting> getSetting(@PathVariable Long id) {
         return new ApiResponse<>(true, "Setting fetched successfully", service.getSetting(id));
     }
 
     // 3. Create new setting
-    @PostMapping("/create")
+    @PostMapping("/admin/settings/create")
     public ApiResponse<AppSetting> createSetting(@RequestBody AppSetting setting) {
         return new ApiResponse<>(true, "Setting created successfully", service.createSetting(setting));
     }
 
     // 4. Update setting
-    @PostMapping("/update/{id}")
+    @PostMapping("/admin/settings/update/{id}")
     public ApiResponse<AppSetting> updateSetting(@PathVariable Long id, @RequestBody AppSetting newSetting) {
         return new ApiResponse<>(true, "Setting updated successfully", service.updateSetting(id, newSetting));
     }
@@ -47,7 +47,7 @@ public class AppSettingController {
     }
 
     // 6. Get all settings by category
-    @GetMapping("/category/{category}")
+    @GetMapping("/admin/settings/category/{category}")
     public ApiResponse<List<AppSetting>> getSettingsByCategory(@PathVariable String category) {
         return new ApiResponse<>(true,
                 "Settings for category '" + category + "' fetched successfully",
