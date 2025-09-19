@@ -52,8 +52,8 @@ public class ForgotPasswordController {
 
         MailBodyDto mailBody = MailBodyDto.builder()
                 .to(user.getEmail())
-                .subject("Password Reset OTP")
-                .body("Your OTP for password reset is: " + otp)
+                .subject("Reset password")
+                .body("Hi, Otp for Verification is: " + otp)
                 .build();
 
         ForgotPassword forgotPassword =  ForgotPassword.builder()

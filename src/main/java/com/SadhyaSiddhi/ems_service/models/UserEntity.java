@@ -20,33 +20,48 @@ public class UserEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String username;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    private long phoneNumber;
+    @Column(nullable = false, unique = true)
+    private Long phoneNumber;
 
     private String firstName;
 
     private String lastName;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private ForgotPassword forgotPassword;
+    // ✅ One-to-Many with Attendance
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attendance> attendanceRecords = new ArrayList<>();
 
+    // ✅ One-to-Many with LeaveRequest
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<LeaveRequest> leaveRequests = new ArrayList<>();
+
+    // ✅ One-to-Many with ForgotPassword
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ForgotPassword> forgotPasswords = new ArrayList<>();
+
+    // ✅ Roles mapping stays the same
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinTable(name = "user_roles",joinColumns = @JoinColumn(name ="user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
-    private List<Role> roles = new ArrayList<>() ;
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name ="user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
+    )
+    private List<Role> roles = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName())) // Assuming role.getName() returns something like "ADMIN"
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .collect(Collectors.toList());
     }
 }
+

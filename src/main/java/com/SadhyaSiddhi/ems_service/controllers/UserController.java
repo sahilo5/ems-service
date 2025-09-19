@@ -46,13 +46,12 @@ public class UserController {
     }
 
     @PostMapping("/user/updateUser/{username}")
-    public ApiResponse<RegisterDto> updateUser(@PathVariable String username, @RequestBody RegisterDto updateUserDto) {
-        userService.updateUserDetailsByUsername(username, updateUserDto);
-        if(!userService.updateUserDetailsByUsername(username, updateUserDto)) {
-            return new ApiResponse<>(false, "User not found", null);
-        } else {
-            return new ApiResponse<>(true, "User updated successfully", null);
+    public ResponseEntity<ApiResponse<Object>>updateUser(@PathVariable String username, @RequestBody RegisterDto updateUserDto) {
+        ApiResponse<Object> response = userService.updateUserDetailsByUsername(username, updateUserDto);
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
         }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/admin/deleteUsers")

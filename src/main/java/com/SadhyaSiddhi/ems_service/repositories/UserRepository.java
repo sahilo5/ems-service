@@ -16,6 +16,14 @@ public interface UserRepository extends JpaRepository<UserEntity,Long> {
 
     boolean existsByUsername(String username);
 
+    boolean existsByEmailAndIdNot(String email, Long id);
+
+    boolean existsByPhoneNumberAndIdNot(Long phoneNumber, Long id);
+
+
+    boolean existsByEmail(String email);
+
+    boolean existsByPhoneNumber(long phoneNumber);
     @Modifying
     @Transactional
     @Query("UPDATE UserEntity u SET u.email = ?2, u.firstName = ?3, u.lastName = ?4, u.phoneNumber = ?5 WHERE u.username = ?1")

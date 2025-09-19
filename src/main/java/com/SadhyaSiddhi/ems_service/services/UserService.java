@@ -14,7 +14,7 @@ public interface UserService {
 
     public RegisterDto getUserByUsername(String username);
 
-    public Boolean updateUserDetailsByUsername(String username, RegisterDto updateUserDto);
+    public ApiResponse<Object> updateUserDetailsByUsername(String username, RegisterDto updateUserDto);
 
     public Boolean deleteUsers(List<String>
                                        usernames);

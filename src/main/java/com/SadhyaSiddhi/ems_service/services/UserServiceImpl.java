@@ -6,6 +6,7 @@ import com.SadhyaSiddhi.ems_service.dto.UserFullNameDto;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
+import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
 import com.SadhyaSiddhi.ems_service.repositories.RoleRepository;
 import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,9 +71,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Boolean updateUserDetailsByUsername(String username, RegisterDto updateUserDto) {
-        userRepository.findByUsername(username)
+    public ApiResponse<Object> updateUserDetailsByUsername(String username, RegisterDto updateUserDto) {
+        UserEntity existingUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
+
+        Long userId = existingUser.getId();
+
+        if(userRepository.existsByEmailAndIdNot(updateUserDto.getEmail(),userId)){
+            return new ApiResponse<>(false, "Email already exists",null);
+        }
+        if(userRepository.existsByPhoneNumberAndIdNot(updateUserDto.getPhoneNumber(),userId)){
+            return new ApiResponse<>(false, "Phone number already exists",null);
+        }
+
+
 
         int updated = userRepository.updateUserDetailsByUsername(
                 updateUserDto.getUsername(),
@@ -84,7 +96,7 @@ public class UserServiceImpl implements UserService {
         if (updated == 0) {
             throw new UserNotFoundException(updateUserDto.getUsername());
         }
-        return true;
+        return new ApiResponse<>(true, "User details updated successfully", null);
     }
 
     @Override

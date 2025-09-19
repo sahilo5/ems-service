@@ -75,6 +75,13 @@ public class AuthServiceImpl implements AuthService {
             return new ApiResponse<>(false, "Username already exists",null);
         }
 
+        if(userRepository.existsByEmail(registerDto.getEmail())){
+            return new ApiResponse<>(false, "Email already exists",null);
+        }
+        if(userRepository.existsByPhoneNumber(registerDto.getPhoneNumber())){
+            return new ApiResponse<>(false, "Phone number already exists",null);
+        }
+
         UserEntity user = new UserEntity();
         user.setUsername(registerDto.getUsername());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
