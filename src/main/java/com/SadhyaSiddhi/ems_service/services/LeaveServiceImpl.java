@@ -187,7 +187,7 @@ public class LeaveServiceImpl implements LeaveService {
                     attendanceRepository.save(attendance);
                 }
             }
-            smsService.sendSms(Long.toString(user.getPhoneNumber()), "My Love ♡, " + user.getUsername() + ", your leave has been Denied, I haven't done yet \uD83E\uDD2D. ");
+            smsService.sendSms(Long.toString(user.getPhoneNumber()), "Hi, "+ user.getFirstName() + "\n Your leave has been Approved");
         }
 
         return new ApiResponse<>(true, "Leave status updated", leave.getLeaveId(),

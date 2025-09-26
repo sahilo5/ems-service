@@ -7,6 +7,7 @@ import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -31,5 +32,13 @@ public class EmployeeServiceImpl implements  EmployeeService{
             dto.setPhoneNumber(emp.getPhoneNumber());
             return dto;
         }).toList();
+    }
+
+    @Override
+    public LocalDate getEmployeeSince(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        return user.getEmployeeSince();
     }
 }

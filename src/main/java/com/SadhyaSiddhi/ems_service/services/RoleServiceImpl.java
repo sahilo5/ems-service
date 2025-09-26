@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -48,8 +49,20 @@ public class RoleServiceImpl implements RoleService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RoleNotFoundException("Role not found: " + roleName));
 
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // remove old roles and assign new
         userRepository.deleteRolesByUsername(username);
         userRepository.addRoleByUsername(username, role.getId());
+
+        // ✅ set employeeSince when promoted to EMPLOYEE
+        if ("EMPLOYEE".equalsIgnoreCase(role.getName())) {
+            if (user.getEmployeeSince() == null) {  // only set the first time
+                user.setEmployeeSince(LocalDate.now());
+                userRepository.save(user);
+            }
+        }
     }
 
 

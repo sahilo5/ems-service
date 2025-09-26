@@ -337,6 +337,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                 if (checkIn != null && checkOut != null) {
                     long hours = Duration.between(checkIn, checkOut).toHours();
                     if (hours >= 4) {
+                        LocalTime checkInTime = checkIn.toLocalTime();
+                        if (checkInTime.isAfter(officeCheckIn.plusMinutes(15))) {
+                            return AttendanceStatus.LATE;
+                        }
                         return AttendanceStatus.PRESENT;
                     } else {
                         return AttendanceStatus.HALF_DAY;

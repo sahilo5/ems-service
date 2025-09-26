@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,22 +34,20 @@ public class UserEntity implements UserDetails {
     private Long phoneNumber;
 
     private String firstName;
-
     private String lastName;
 
-    // ✅ One-to-Many with Attendance
+    @Column(name = "employee_since")
+    private LocalDate employeeSince;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendanceRecords = new ArrayList<>();
 
-    // ✅ One-to-Many with LeaveRequest
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LeaveRequest> leaveRequests = new ArrayList<>();
 
-    // ✅ One-to-Many with ForgotPassword
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ForgotPassword> forgotPasswords = new ArrayList<>();
 
-    // ✅ Roles mapping stays the same
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
             name = "user_roles",
@@ -64,4 +63,3 @@ public class UserEntity implements UserDetails {
                 .collect(Collectors.toList());
     }
 }
-
