@@ -1,5 +1,6 @@
 package com.SadhyaSiddhi.ems_service.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "employee_salary_log")
 public class EmployeeSalaryLog {
 
@@ -22,7 +24,7 @@ public class EmployeeSalaryLog {
 
     // Pay period (like 2025-09 for September 2025)
     @Column(nullable = false)
-    private String payPeriod;
+    private String salaryMonth;
 
     // Final payout (can differ from baseAmount if bonus/deductions applied)
     @Column(nullable = false)

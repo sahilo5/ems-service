@@ -2,8 +2,10 @@ package com.SadhyaSiddhi.ems_service.services;
 
 import com.SadhyaSiddhi.ems_service.exceptions.RoleNotFoundException;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
+import com.SadhyaSiddhi.ems_service.models.EmployeeSalaryConfig;
 import com.SadhyaSiddhi.ems_service.models.Role;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
+import com.SadhyaSiddhi.ems_service.repositories.EmployeeSalaryConfigRepository;
 import com.SadhyaSiddhi.ems_service.repositories.RoleRepository;
 import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EmployeeSalaryConfigRepository configRepository;
 
     public List<Role> getAllRoles() {
         List<Role> roles = roleRepository.findAll();
@@ -56,14 +61,26 @@ public class RoleServiceImpl implements RoleService {
         userRepository.deleteRolesByUsername(username);
         userRepository.addRoleByUsername(username, role.getId());
 
-        // ✅ set employeeSince when promoted to EMPLOYEE
         if ("EMPLOYEE".equalsIgnoreCase(role.getName())) {
             if (user.getEmployeeSince() == null) {  // only set the first time
                 user.setEmployeeSince(LocalDate.now());
                 userRepository.save(user);
             }
+
+            // create a blank salary config
+            if(configRepository.findByUser(user).isEmpty()) {
+            EmployeeSalaryConfig blankConfig = new EmployeeSalaryConfig();
+            blankConfig.setUser(user);
+            blankConfig.setActive(true);
+            blankConfig.setSalaryTier(null);
+            blankConfig.setBaseAmount(0.0);
+
+            configRepository.save(blankConfig);
+            }
+
         }
     }
+
 
 
 

@@ -1,37 +1,37 @@
 package com.SadhyaSiddhi.ems_service.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
 
 @Entity
-@Data
-@NoArgsConstructor
 @Table(name = "employee_salary_config")
+@Getter
+@Setter
+@NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class EmployeeSalaryConfig {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Link to employee (UserEntity with role = EMPLOYEE)
-    @OneToOne
-    @JoinColumn(name = "employee_id", referencedColumnName = "id", nullable = false, unique = true)
-    private UserEntity employee;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
-    // Salary tier/category (experience/role-based)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SalaryTier salaryTier;
+    private SalaryTier salaryTier; // e.g. JUNIOR, MID, SENIOR
 
-    // Base/fixed monthly salary
-    @Column(nullable = false)
-    private Double baseAmount;
+    private Double baseAmount; // monthly or per-day, up to you
 
-    // Whether employee is active on payroll
-    @Column(nullable = false)
     private boolean active = true;
 
-    // Track last paid period to avoid duplicate logs
-    private String lastPaidPeriod;
+    private LocalDate createdAt = LocalDate.now();
 }
+
