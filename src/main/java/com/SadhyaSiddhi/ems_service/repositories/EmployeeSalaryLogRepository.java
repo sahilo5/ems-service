@@ -18,5 +18,14 @@ public interface EmployeeSalaryLogRepository extends JpaRepository<EmployeeSalar
     List<EmployeeSalaryLog> findLogsByConfigAndMonthAndDone(@Param("configId") Long configId,
                                                             @Param("salaryMonth") String salaryMonth);
 
+    @Query("""
+    SELECT l FROM EmployeeSalaryLog l 
+    JOIN l.config c 
+    JOIN c.user u 
+    WHERE u.active = true AND c.active = true
+""")
+    List<EmployeeSalaryLog> findAllActiveLogs();
+
+
 
 }

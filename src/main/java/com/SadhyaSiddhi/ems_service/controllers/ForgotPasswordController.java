@@ -4,6 +4,7 @@ import com.SadhyaSiddhi.ems_service.dto.ForgotPasswordDto;
 import com.SadhyaSiddhi.ems_service.dto.MailBodyDto;
 import com.SadhyaSiddhi.ems_service.dto.ResetPasswordDto;
 import com.SadhyaSiddhi.ems_service.exceptions.CustomAuthenticationException;
+import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.ForgotPassword;
 import com.SadhyaSiddhi.ems_service.models.UserEntity;
 import com.SadhyaSiddhi.ems_service.repositories.ForgotPasswordRepository;
@@ -48,6 +49,9 @@ public class ForgotPasswordController {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomAuthenticationException("User not found with username: " + username));
 
+        if (!user.isActive()) {
+            throw new UserNotFoundException("Employee is inactive: " + username);
+        }
         int otp = generateOtp();
 
         MailBodyDto mailBody = MailBodyDto.builder()

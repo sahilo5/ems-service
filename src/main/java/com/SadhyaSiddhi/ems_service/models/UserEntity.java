@@ -39,6 +39,9 @@ public class UserEntity implements UserDetails {
     @Column(name = "employee_since")
     private LocalDate employeeSince;
 
+    @Column(name = "is_active")
+    private boolean active = true;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendanceRecords = new ArrayList<>();
 
@@ -48,7 +51,7 @@ public class UserEntity implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ForgotPassword> forgotPasswords = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name ="user_id", referencedColumnName = "id"),
@@ -61,5 +64,10 @@ public class UserEntity implements UserDetails {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.active;
     }
 }

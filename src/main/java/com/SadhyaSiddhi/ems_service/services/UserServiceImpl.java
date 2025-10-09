@@ -39,9 +39,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<RegisterDto> getAllUsers() {
-        List<UserEntity> users = userRepository.findAll();
+        List<UserEntity> users = userRepository.findByActiveTrue();
         if (users.isEmpty()) {
-            throw new UserNotFoundException("No users found");
+            throw new UserNotFoundException("No active users found");
         }
 
         return users.stream().map(user -> {
@@ -54,6 +54,19 @@ public class UserServiceImpl implements UserService {
             return dto;
         }).toList();
     }
+
+    @Override
+    public List<UserDto> getAllUsersWithRoles() {
+        List<UserEntity> users = userRepository.findByActiveTrue();
+
+        return users.stream().map(user -> new UserDto(
+                user.getFirstName(),
+                user.getLastName(),
+                user.getUsername(),
+                user.getRoles().stream().map(Role::getName).toList()
+        )).toList();
+    }
+
 
     @Override
     public RegisterDto getUserByUsername(String username) {
@@ -107,10 +120,8 @@ public class UserServiceImpl implements UserService {
                 UserEntity user = userRepository.findByUsername(username)
                         .orElseThrow(() -> new UserNotFoundException(username));
 
-                user.getRoles().clear();
+                user.setActive(false);
                 userRepository.save(user);
-
-                userRepository.delete(user);
             } catch (UserNotFoundException e) {
                 allDeleted = false;
             }
@@ -119,18 +130,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getAllUsersWithRoles() {
-        List<UserEntity> users = userRepository.findAllUsersWithRoles();
+    public Boolean activateUser(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
 
-        return users.stream().map(user -> new UserDto(
-                user.getFirstName(),
-                user.getLastName(),
-                user.getUsername(),
-                user.getRoles().stream().map(Role::getName).toList()
-        )).toList();
+        user.setActive(true);
+        userRepository.save(user);
+        return true;
     }
-
-
 
 
 }

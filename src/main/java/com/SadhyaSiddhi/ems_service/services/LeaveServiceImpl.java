@@ -1,6 +1,7 @@
 package com.SadhyaSiddhi.ems_service.services;
 
 import com.SadhyaSiddhi.ems_service.dto.LeaveResponseDto;
+import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.*;
 import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
 import com.SadhyaSiddhi.ems_service.repositories.AttendanceRepository;
@@ -57,7 +58,7 @@ public class LeaveServiceImpl implements LeaveService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<LeaveRequest> leaves = leaveRepository.findByUser(user);
+        List<LeaveRequest> leaves = leaveRepository.findByUserAndActiveTrue(user);
 
         List<LeaveResponseDto> leaveDtos = leaves.stream().map(leave -> {
             LeaveResponseDto dto = new LeaveResponseDto();
@@ -109,9 +110,8 @@ public class LeaveServiceImpl implements LeaveService {
                 HttpStatus.OK.value(), LocalDateTime.now());
     }
 
-    // Admin: Get all leaves
     public ApiResponse<Object> getAllLeaves() {
-        List<LeaveRequest> allLeaves = leaveRepository.findAll();
+        List<LeaveRequest> allLeaves = leaveRepository.findAllActiveLeavesForActiveUsers();
 
         List<LeaveResponseDto> leaveDtos = allLeaves.stream().map(leave -> {
             LeaveResponseDto dto = new LeaveResponseDto();
@@ -124,8 +124,7 @@ public class LeaveServiceImpl implements LeaveService {
             dto.setDescription(leave.getDescription());
             dto.setCreatedAt(leave.getCreatedAt());
             dto.setRejectionMessage(leave.getRejectionMessage());
-
-            dto.setEmployeeName(leave.getUser().getFirstName()+" "+leave.getUser().getLastName());
+            dto.setEmployeeName(leave.getUser().getFirstName() + " " + leave.getUser().getLastName());
             return dto;
         }).toList();
 
@@ -133,9 +132,10 @@ public class LeaveServiceImpl implements LeaveService {
                 HttpStatus.OK.value(), LocalDateTime.now());
     }
 
+
     // Admin: Get leaves between two dates
     public ApiResponse<Object> getLeavesBetween(LocalDate start, LocalDate end) {
-        List<LeaveRequest> leaves = leaveRepository.findByDatesBetween(start, end);
+        List<LeaveRequest> leaves = leaveRepository.findByDatesBetweenAndActiveTrue(start, end);
 
         List<LeaveResponseDto> leaveDtos = leaves.stream().map(leave -> {
             LeaveResponseDto dto = new LeaveResponseDto();
@@ -155,7 +155,7 @@ public class LeaveServiceImpl implements LeaveService {
                 HttpStatus.OK.value(), LocalDateTime.now());
     }
 
-    @Transactional
+
     public ApiResponse<Object> updateLeaveStatus(Long leaveId, LeaveStatus status, String rejectionMsg) {
         LeaveRequest leave = leaveRepository.findById(leaveId)
                 .orElseThrow(() -> new RuntimeException("Leave not found"));
@@ -163,12 +163,31 @@ public class LeaveServiceImpl implements LeaveService {
         leave.setStatus(status);
         if (status == LeaveStatus.REJECTED) {
             leave.setRejectionMessage(rejectionMsg);
+
+            UserEntity user = leave.getUser();
+
+            for (LocalDate leaveDate : leave.getDates()) {
+                // Check if attendance already exists for this day & user
+                boolean exists = attendanceRepository.existsByUserAndDate(user, leaveDate);
+                if (exists) {
+                    Attendance attendance = attendanceRepository.findByUserAndDate(user, leaveDate)
+                            .orElseThrow(() -> new RuntimeException("Attendance not found"));
+                    attendance.setUser(user);
+                    attendance.setDate(leaveDate);
+                    attendance.setCheckInTime(null);
+                    attendance.setCheckOutTime(null);
+                    attendance.setStatus(AttendanceStatus.UNMARKED);
+                    attendance.setMarkedBy(MarkedBy.ADMIN);
+
+                    attendanceRepository.save(attendance);
+                }
+            }
+//            smsService.sendSms(Long.toString(user.getPhoneNumber()), "Hi, "+ user.getFirstName() + "\n Your leave has been Rejected. Reason: " + rejectionMsg);
         }
 
         // Save leave update first
         leaveRepository.save(leave);
 
-        // If approved → create attendance entries
         if (status == LeaveStatus.APPROVED) {
             UserEntity user = leave.getUser();
 
@@ -187,7 +206,7 @@ public class LeaveServiceImpl implements LeaveService {
                     attendanceRepository.save(attendance);
                 }
             }
-            smsService.sendSms(Long.toString(user.getPhoneNumber()), "Hi, "+ user.getFirstName() + "\n Your leave has been Approved");
+//            smsService.sendSms(Long.toString(user.getPhoneNumber()), "Hi, "+ user.getFirstName() + "\n Your leave has been Approved");
         }
 
         return new ApiResponse<>(true, "Leave status updated", leave.getLeaveId(),
@@ -199,7 +218,11 @@ public class LeaveServiceImpl implements LeaveService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        if (!user.isActive()) {
+            throw new UserNotFoundException("Employee is inactive: " + username);
+        }
 
         LeaveRequest leave = leaveRepository.findById(leaveId)
                 .orElseThrow(() -> new RuntimeException("Leave not found"));
@@ -215,6 +238,7 @@ public class LeaveServiceImpl implements LeaveService {
         }
 
         leave.getDates().clear();
+        leave.setActive(false);
         leaveRepository.save(leave);
         leaveRepository.delete(leave);
 

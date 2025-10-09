@@ -19,4 +19,6 @@ public interface UserService {
     public Boolean deleteUsers(List<String>
                                        usernames);
     public List<UserDto> getAllUsersWithRoles();
+
+    public Boolean activateUser(String username);
 }

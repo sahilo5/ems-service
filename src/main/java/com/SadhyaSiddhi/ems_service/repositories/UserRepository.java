@@ -20,8 +20,12 @@ public interface UserRepository extends JpaRepository<UserEntity,Long> {
 
     boolean existsByPhoneNumberAndIdNot(Long phoneNumber, Long id);
 
+    List<UserEntity> findByActiveTrue();
 
     boolean existsByEmail(String email);
+
+    @Query("SELECT u FROM UserEntity u JOIN u.roles r WHERE r.name = 'EMPLOYEE' and u.active = true")
+    List<UserEntity> findAllActiveEmployees();
 
     boolean existsByPhoneNumber(long phoneNumber);
     @Modifying
@@ -41,10 +45,5 @@ public interface UserRepository extends JpaRepository<UserEntity,Long> {
             "VALUES ((SELECT id FROM users WHERE username = :username), :roleId)", nativeQuery = true)
     void addRoleByUsername(@Param("username") String username, @Param("roleId") Long roleId);
 
-    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.roles")
-    List<UserEntity> findAllUsersWithRoles();
-
-    @Query("SELECT u FROM UserEntity u JOIN u.roles r WHERE r.name = 'EMPLOYEE'")
-    List<UserEntity> findAllEmployees();
 
 }

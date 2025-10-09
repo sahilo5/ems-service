@@ -47,7 +47,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
     @Override
     public List<SalaryConfigDto> getAllConfigs() {
-        List<EmployeeSalaryConfig> configs = configRepository.findAll();
+        List<EmployeeSalaryConfig> configs = configRepository.findAllActiveConfigs();
 
         return configs.stream().map(config -> {
             SalaryConfigDto dto = new SalaryConfigDto();
@@ -103,16 +103,22 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
         if (log.getConfig() != null && log.getConfig().getUser() != null) {
             UserEntity user = log.getConfig().getUser();
-            dto.setUsername(user.getUsername());
-            dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
+            if(user.isActive()) {
+                dto.setUsername(user.getUsername());
+                dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
+            } else {
+                dto.setUsername(user.getUsername());
+                dto.setEmployeeName("Inactive User");
+            }
         }
 
         return dto;
     }
 
+
     @Override
     public List<SalaryLogDto> getAllLogs() {
-        return logRepository.findAll()
+        return logRepository.findAllActiveLogs()
                 .stream()
                 .map(this::mapToDto)
                 .toList();
@@ -137,7 +143,12 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     @Override
     public String addSalaryLog(String username, String salaryAmount, Double amountPaid, String statusStr, String remarks) {
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+
+        if (!user.isActive()) {
+            throw new UserNotFoundException("Employee is inactive: " + username);
+        }
+
 
         EmployeeSalaryConfig config = configRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
@@ -171,9 +182,14 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         LocalDate startDate = ym.atDay(1);
         LocalDate endDate = ym.atEndOfMonth();
 
-        // Fetch user & salary config
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+
+        if (!user.isActive()) {
+            throw new UserNotFoundException("Employee is inactive: " + username);
+        }
+
+
         EmployeeSalaryConfig config = configRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
 

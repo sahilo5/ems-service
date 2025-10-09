@@ -40,12 +40,17 @@ public class LeaveRequest {
     @Column(nullable = false)
     private LeaveStatus status = LeaveStatus.PENDING;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
+
     private String rejectionMessage; // filled if rejected
 
     private LocalDate createdAt = LocalDate.now();
 
-    // Link to the employee applying
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
+
+
+
 }

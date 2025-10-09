@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleGeneral(Exception ex) {
         ApiResponse<Object> response = new ApiResponse<>(
                 false,
-                "An unexpected error occurred",
+                "An unexpected error occurred, Contact to admin",
                 null,
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 LocalDateTime.now()
