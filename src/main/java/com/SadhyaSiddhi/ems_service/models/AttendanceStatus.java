@@ -6,5 +6,6 @@ public enum AttendanceStatus {
     LATE,
     HALF_DAY,
     LEAVE,
-    UNMARKED
+    PAID_LEAVE,
+    UNMARKED,
 }

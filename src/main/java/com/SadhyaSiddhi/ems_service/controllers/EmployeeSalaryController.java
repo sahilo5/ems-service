@@ -1,9 +1,8 @@
 package com.SadhyaSiddhi.ems_service.controllers;
 
-import com.SadhyaSiddhi.ems_service.dto.SalaryConfigDto;
-import com.SadhyaSiddhi.ems_service.dto.SalaryLogDto;
-import com.SadhyaSiddhi.ems_service.dto.SalarySummaryDto;
-import com.SadhyaSiddhi.ems_service.dto.YearlySalaryRequest;
+import com.SadhyaSiddhi.ems_service.dto.*;
+import com.SadhyaSiddhi.ems_service.models.AdvanceLog;
+import com.SadhyaSiddhi.ems_service.models.Advances;
 import com.SadhyaSiddhi.ems_service.models.EmployeeSalaryConfig;
 import com.SadhyaSiddhi.ems_service.models.EmployeeSalaryLog;
 import com.SadhyaSiddhi.ems_service.payload.ApiResponse;
@@ -14,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -125,6 +125,68 @@ public class EmployeeSalaryController {
     public ResponseEntity<Map<String, Double>> getYearlySummary(@RequestBody YearlySalaryRequest request) {
         Map<String, Double> result = salaryService.getYearlyNetSalary(request.getUsername(), request.getYear());
         return ResponseEntity.ok(result);
+    }
+
+    // Advances Endpoints
+    @PostMapping("/advances")
+    public ResponseEntity<ApiResponse<AdvanceDto>> createAdvance(@RequestBody AdvanceDto advance) {
+        AdvanceDto created = salaryService.createAdvance(advance);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance created", created, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    @PostMapping("/advances/{id}")
+    public ResponseEntity<ApiResponse<AdvanceDto>> updateAdvance(@PathVariable Long id, @RequestBody AdvanceDto advance) {
+        AdvanceDto updated = salaryService.updateAdvance(id, advance);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance updated", updated, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    @GetMapping("/advances/{id}")
+    public ResponseEntity<ApiResponse<AdvanceDto>> getAdvanceById(@PathVariable Long id) {
+        AdvanceDto advance = salaryService.getAdvanceById(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance fetched", advance, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    @PostMapping("/advances/{id}/log")
+    public ResponseEntity<ApiResponse<AdvanceLogDto>> logAdvancePayment(@PathVariable Long id, @RequestBody AdvanceLogDto log) {
+        AdvanceLogDto createdLog = salaryService.logAdvancePayment(id, log);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance payment logged", createdLog, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    @GetMapping("/advances/{id}/logs")
+    public ResponseEntity<ApiResponse<List<AdvanceLogDto>>> getAdvanceLogs(@PathVariable Long id) {
+        List<AdvanceLogDto> logs = salaryService.getAdvanceLogs(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance logs fetched", logs, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    @GetMapping("/advances")
+    public ResponseEntity<ApiResponse<List<AdvanceDto>>> getAllAdvances() {
+        List<AdvanceDto> advances = salaryService.getAllAdvances();
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advances fetched", advances, HttpStatus.OK.value(), LocalDateTime.now()));
+    }
+
+    // OtherPayments APIs
+    @PostMapping("/other-payments")
+    public ResponseEntity<ApiResponse<OtherPaymentDto>> createOtherPayment(@RequestBody OtherPaymentDto dto) {
+        OtherPaymentDto created = salaryService.createOtherPayment(dto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Other payment created", created, HttpStatus.OK.value(), java.time.LocalDateTime.now()));
+    }
+
+    @PostMapping("/other-payments/{id}")
+    public ResponseEntity<ApiResponse<OtherPaymentDto>> updateOtherPayment(@PathVariable Long id, @RequestBody OtherPaymentDto dto) {
+        OtherPaymentDto updated = salaryService.updateOtherPayment(id, dto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Other payment updated", updated, HttpStatus.OK.value(), java.time.LocalDateTime.now()));
+    }
+
+    @GetMapping("/other-payments/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteOtherPayment(@PathVariable Long id) {
+        salaryService.deleteOtherPayment(id);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Other payment deleted", null, HttpStatus.OK.value(), java.time.LocalDateTime.now()));
+    }
+
+    @GetMapping("/other-payments")
+    public ResponseEntity<ApiResponse<List<OtherPaymentDto>>> getAllOtherPayments() {
+        List<OtherPaymentDto> payments = salaryService.getAllOtherPayments();
+        return ResponseEntity.ok(new ApiResponse<>(true, "Other payments fetched", payments, HttpStatus.OK.value(), java.time.LocalDateTime.now()));
     }
 
 }

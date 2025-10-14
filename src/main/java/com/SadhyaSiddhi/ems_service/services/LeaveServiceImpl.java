@@ -39,7 +39,6 @@ public class LeaveServiceImpl implements LeaveService {
         String username = auth.getName();
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         leaveRequest.setUser(user);
         leaveRequest.setNoOfDays(leaveRequest.getDates().size());
         leaveRequest.setStatus(LeaveStatus.PENDING);
@@ -200,7 +199,12 @@ public class LeaveServiceImpl implements LeaveService {
                     attendance.setDate(leaveDate);
                     attendance.setCheckInTime(null);
                     attendance.setCheckOutTime(null);
-                    attendance.setStatus(AttendanceStatus.LEAVE);
+
+                    if(leave.getType() == LeaveType.PAID ){
+                        attendance.setStatus(AttendanceStatus.PAID_LEAVE);
+                    } else{
+                        attendance.setStatus(AttendanceStatus.LEAVE);
+                    }
                     attendance.setMarkedBy(MarkedBy.ADMIN);
 
                     attendanceRepository.save(attendance);

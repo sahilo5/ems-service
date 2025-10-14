@@ -1,6 +1,9 @@
 package com.SadhyaSiddhi.ems_service.services;
 
+import com.SadhyaSiddhi.ems_service.dto.AdvanceDto;
+import com.SadhyaSiddhi.ems_service.dto.AdvanceLogDto;
 import com.SadhyaSiddhi.ems_service.dto.AttendanceRequest;
+import com.SadhyaSiddhi.ems_service.dto.OtherPaymentDto;
 import com.SadhyaSiddhi.ems_service.dto.SalaryConfigDto;
 import com.SadhyaSiddhi.ems_service.dto.SalaryLogDto;
 import com.SadhyaSiddhi.ems_service.dto.SalarySummaryDto;
@@ -9,8 +12,11 @@ import com.SadhyaSiddhi.ems_service.exceptions.SettingNotConfiguredProperlyExcep
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
 import com.SadhyaSiddhi.ems_service.models.*;
 import com.SadhyaSiddhi.ems_service.payload.AttendanceDayResponse;
+import com.SadhyaSiddhi.ems_service.repositories.AdvanceLogRepository;
+import com.SadhyaSiddhi.ems_service.repositories.AdvancesRepository;
 import com.SadhyaSiddhi.ems_service.repositories.EmployeeSalaryConfigRepository;
 import com.SadhyaSiddhi.ems_service.repositories.EmployeeSalaryLogRepository;
+import com.SadhyaSiddhi.ems_service.repositories.OtherPaymentsRepository;
 import com.SadhyaSiddhi.ems_service.repositories.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +44,11 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
     private final EmployeeSalaryConfigRepository configRepository;
     private final EmployeeSalaryLogRepository logRepository;
     private final UserRepository userRepository;
+
+    private final AdvancesRepository advancesRepository;
+    private final AdvanceLogRepository advanceLogRepository;
+
+    private final OtherPaymentsRepository otherPaymentsRepository;
 
     @Autowired
     private AttendanceService attendanceService;
@@ -115,6 +126,47 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         return dto;
     }
 
+    private AdvanceDto mapToDto(Advances advance) {
+        AdvanceDto dto = new AdvanceDto();
+        dto.setId(advance.getId());
+        dto.setAdvanceDate(advance.getAdvanceDate());
+        dto.setTitle(advance.getTitle());
+        dto.setRemark(advance.getRemark());
+        dto.setAmount(advance.getAmount());
+        dto.setStatus(advance.getStatus() != null ? advance.getStatus().name() : null);
+        if (advance.getConfig() != null && advance.getConfig().getUser() != null) {
+            dto.setEmployeeName(advance.getConfig().getUser().getFirstName() + " " + advance.getConfig().getUser().getLastName());
+            dto.setUsername(advance.getConfig().getUser().getUsername());
+        }
+        return dto;
+    }
+
+    private AdvanceLogDto mapToAdvanceLogDto(AdvanceLog log) {
+        AdvanceLogDto dto = new AdvanceLogDto();
+        dto.setId(log.getId());
+        dto.setAdvanceId(log.getAdvance() != null ? log.getAdvance().getId() : null);
+        dto.setPaidAmount(log.getPaidAmount());
+        dto.setPaidDate(log.getPaidDate());
+        dto.setRemarks(log.getRemarks());
+        dto.setStatus(log.getStatus() != null ? log.getStatus().name() : null);
+        return dto;
+    }
+
+    private OtherPaymentDto mapToOtherPaymentDto(OtherPayments payment) {
+        OtherPaymentDto dto = new OtherPaymentDto();
+        dto.setId(payment.getId());
+        dto.setType(payment.getType() != null ? payment.getType().name() : null);
+        dto.setRemark(payment.getRemark());
+        dto.setAmount(payment.getAmount());
+        dto.setCreatedAt(payment.getCreatedAt());
+        dto.setDate(payment.getDate());
+        dto.setStatus(payment.getStatus());
+        if (payment.getConfig() != null && payment.getConfig().getUser() != null) {
+            dto.setEmployeeName(payment.getConfig().getUser().getFirstName() + " " + payment.getConfig().getUser().getLastName());
+            dto.setUsername(payment.getConfig().getUser().getUsername());
+        }
+        return dto;
+    }
 
     @Override
     public List<SalaryLogDto> getAllLogs() {
@@ -297,6 +349,145 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
             }
         }
         return yearlySalaries;
+    }
+
+    @Override
+    public AdvanceDto createAdvance(AdvanceDto advanceDto) {
+        if (advanceDto.getUsername() == null || advanceDto.getUsername().isEmpty()) {
+            throw new ResourceNotFoundException("Username is required to create advance");
+        }
+        UserEntity user = userRepository.findByUsername(advanceDto.getUsername())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + advanceDto.getUsername()));
+        EmployeeSalaryConfig config = configRepository.findByUser(user)
+            .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + advanceDto.getUsername()));
+        Advances advance = new Advances();
+        advance.setConfig(config);
+        advance.setAdvanceDate(advanceDto.getAdvanceDate());
+        advance.setTitle(advanceDto.getTitle());
+        advance.setRemark(advanceDto.getRemark());
+        advance.setAmount(advanceDto.getAmount());
+        advance.setStatus(advanceDto.getStatus() != null ? AdvanceStatus.valueOf(advanceDto.getStatus()) : AdvanceStatus.PENDING);
+        advance.setCreatedAt(LocalDateTime.now());
+        Advances saved = advancesRepository.save(advance);
+        return mapToDto(saved);
+    }
+
+    @Override
+    public AdvanceDto updateAdvance(Long id, AdvanceDto advanceDto) {
+        Advances existing = advancesRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Advance not found with id " + id));
+        if (advanceDto.getUsername() != null && !advanceDto.getUsername().isEmpty()) {
+            UserEntity user = userRepository.findByUsername(advanceDto.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + advanceDto.getUsername()));
+            EmployeeSalaryConfig config = configRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + advanceDto.getUsername()));
+            existing.setConfig(config);
+        }
+        existing.setAdvanceDate(advanceDto.getAdvanceDate());
+        existing.setTitle(advanceDto.getTitle());
+        existing.setRemark(advanceDto.getRemark());
+        existing.setAmount(advanceDto.getAmount());
+        existing.setStatus(advanceDto.getStatus() != null ? AdvanceStatus.valueOf(advanceDto.getStatus()) : existing.getStatus());
+        existing.setUpdatedAt(LocalDateTime.now());
+        Advances saved = advancesRepository.save(existing);
+        return mapToDto(saved);
+    }
+
+    @Override
+    public void deleteAdvance(Long id) {
+        advancesRepository.deleteById(id);
+    }
+
+    @Override
+    public List<AdvanceDto> getAllAdvances() {
+        return advancesRepository.findAll().stream().map(advance -> {
+            AdvanceDto dto = new AdvanceDto();
+            dto.setId(advance.getId());
+            if (advance.getConfig() != null && advance.getConfig().getUser() != null) {
+                UserEntity user = advance.getConfig().getUser();
+                dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
+                dto.setUsername(user.getUsername());
+            }
+            dto.setAdvanceDate(advance.getAdvanceDate());
+            dto.setTitle(advance.getTitle());
+            dto.setRemark(advance.getRemark());
+            dto.setAmount(advance.getAmount());
+            dto.setStatus(advance.getStatus() != null ? advance.getStatus().name() : null);
+            return dto;
+        }).toList();
+    }
+
+    @Override
+    public AdvanceDto getAdvanceById(Long id) {
+        Advances advance = advancesRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Advance not found with id " + id));
+        return mapToDto(advance);
+    }
+
+    @Override
+    public AdvanceLogDto logAdvancePayment(Long advanceId, AdvanceLogDto logDto) {
+        Advances advance = advancesRepository.findById(advanceId)
+            .orElseThrow(() -> new ResourceNotFoundException("Advance not found with id " + advanceId));
+        AdvanceLog log = new AdvanceLog();
+        log.setAdvance(advance);
+        log.setPaidAmount(logDto.getPaidAmount());
+        log.setPaidDate(LocalDateTime.now());
+        log.setRemarks(logDto.getRemarks());
+        log.setStatus(logDto.getStatus() != null ? AdvanceStatus.valueOf(logDto.getStatus()) : AdvanceStatus.PAID);
+        AdvanceLog savedLog = advanceLogRepository.save(log);
+        advance.setStatus(AdvanceStatus.PAID);
+        advancesRepository.save(advance);
+        return mapToAdvanceLogDto(savedLog);
+    }
+
+    @Override
+    public List<AdvanceLogDto> getAdvanceLogs(Long advanceId) {
+        return advanceLogRepository.findByAdvanceId(advanceId).stream()
+            .map(this::mapToAdvanceLogDto)
+            .toList();
+    }
+
+    @Override
+    public OtherPaymentDto createOtherPayment(OtherPaymentDto dto) {
+        UserEntity user = userRepository.findByUsername(dto.getUsername())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + dto.getUsername()));
+        EmployeeSalaryConfig config = configRepository.findByUser(user)
+            .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + dto.getUsername()));
+        OtherPayments payment = new OtherPayments();
+        payment.setType(dto.getType() != null ? OtherPaymentType.valueOf(dto.getType()) : OtherPaymentType.OTHERS);
+        payment.setRemark(dto.getRemark());
+        payment.setAmount(dto.getAmount());
+        payment.setDate(dto.getDate());
+        payment.setCreatedAt(LocalDateTime.now());
+        payment.setStatus("PAID");
+        payment.setConfig(config);
+        OtherPayments saved = otherPaymentsRepository.save(payment);
+        return mapToOtherPaymentDto(saved);
+    }
+
+    @Override
+    public OtherPaymentDto updateOtherPayment(Long id, OtherPaymentDto dto) {
+        OtherPayments payment = otherPaymentsRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("OtherPayment not found with id " + id));
+        payment.setType(dto.getType() != null ? OtherPaymentType.valueOf(dto.getType()) : payment.getType());
+        payment.setRemark(dto.getRemark());
+        payment.setAmount(dto.getAmount());
+        payment.setDate(dto.getDate());
+        payment.setStatus("PAID");
+        OtherPayments saved = otherPaymentsRepository.save(payment);
+        return mapToOtherPaymentDto(saved);
+    }
+
+    @Override
+    public void deleteOtherPayment(Long id) {
+        otherPaymentsRepository.deleteById(id);
+    }
+
+    @Override
+    public List<OtherPaymentDto> getAllOtherPayments() {
+        return otherPaymentsRepository.findAll().stream()
+            .map(this::mapToOtherPaymentDto)
+            .toList();
     }
 
 }

@@ -22,7 +22,7 @@ public class LeaveRequest {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LeaveType type;   // e.g. SICK, CASUAL, EARNED
+    private LeaveType type;
 
     @Column(nullable = false)
     private String reason;    // why leave is applied
@@ -50,7 +50,5 @@ public class LeaveRequest {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
-
-
 
 }

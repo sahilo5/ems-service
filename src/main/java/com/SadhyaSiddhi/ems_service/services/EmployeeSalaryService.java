@@ -1,8 +1,8 @@
 package com.SadhyaSiddhi.ems_service.services;
 
-import com.SadhyaSiddhi.ems_service.dto.SalaryConfigDto;
-import com.SadhyaSiddhi.ems_service.dto.SalaryLogDto;
-import com.SadhyaSiddhi.ems_service.dto.SalarySummaryDto;
+import com.SadhyaSiddhi.ems_service.dto.*;
+import com.SadhyaSiddhi.ems_service.models.AdvanceLog;
+import com.SadhyaSiddhi.ems_service.models.Advances;
 import com.SadhyaSiddhi.ems_service.models.EmployeeSalaryConfig;
 import com.SadhyaSiddhi.ems_service.models.EmployeeSalaryLog;
 
@@ -22,6 +22,22 @@ public interface EmployeeSalaryService {
     public String addSalaryLog(String username, String payPeriod, Double amountPaid, String statusStr, String remarks);
 
     //Summary
-    public SalarySummaryDto getSalarySummary(String username, String month);
+    SalarySummaryDto getSalarySummary(String username, String month);
     Map<String, Double> getYearlyNetSalary(String username, int year);
+
+    // Advances
+    AdvanceDto createAdvance(AdvanceDto advance);
+    AdvanceDto updateAdvance(Long id, AdvanceDto advance);
+    void deleteAdvance(Long id);
+    List<AdvanceDto> getAllAdvances();
+    AdvanceDto getAdvanceById(Long id);
+
+    AdvanceLogDto logAdvancePayment(Long advanceId, AdvanceLogDto log);
+    List<AdvanceLogDto> getAdvanceLogs(Long advanceId);
+    // Other Payments
+    public OtherPaymentDto createOtherPayment(OtherPaymentDto dto);
+    public void deleteOtherPayment(Long id);
+    public List<OtherPaymentDto> getAllOtherPayments();
+    public OtherPaymentDto updateOtherPayment(Long id, OtherPaymentDto dto);
+
 }
