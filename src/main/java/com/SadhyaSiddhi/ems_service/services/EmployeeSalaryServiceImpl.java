@@ -1,12 +1,6 @@
 package com.SadhyaSiddhi.ems_service.services;
 
-import com.SadhyaSiddhi.ems_service.dto.AdvanceDto;
-import com.SadhyaSiddhi.ems_service.dto.AdvanceLogDto;
-import com.SadhyaSiddhi.ems_service.dto.AttendanceRequest;
-import com.SadhyaSiddhi.ems_service.dto.OtherPaymentDto;
-import com.SadhyaSiddhi.ems_service.dto.SalaryConfigDto;
-import com.SadhyaSiddhi.ems_service.dto.SalaryLogDto;
-import com.SadhyaSiddhi.ems_service.dto.SalarySummaryDto;
+import com.SadhyaSiddhi.ems_service.dto.*;
 import com.SadhyaSiddhi.ems_service.exceptions.ResourceNotFoundException;
 import com.SadhyaSiddhi.ems_service.exceptions.SettingNotConfiguredProperlyException;
 import com.SadhyaSiddhi.ems_service.exceptions.UserNotFoundException;
@@ -31,10 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -107,11 +99,12 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         SalaryLogDto dto = new SalaryLogDto();
         dto.setId(log.getId());
         dto.setSalaryMonth(log.getSalaryMonth());
-        dto.setPayDay(log.getPayDay());
-        dto.setAmountPaid(log.getAmountPaid());
-        dto.setStatus(log.getStatus().name());
-        dto.setRemarks(log.getRemarks());
-
+        dto.setGrossSalary(log.getGrossSalary());
+        dto.setAdvanceTotal(log.getAdvanceTotal());
+        dto.setNetSalary(log.getNetSalary());
+        dto.setOtherPaymentsTotal(log.getOtherPaymentsTotal());
+        dto.setStartDate(log.getStartDate()); // Added startDate mapping
+        dto.setEndDate(log.getEndDate());     // Added endDate mapping
         if (log.getConfig() != null && log.getConfig().getUser() != null) {
             UserEntity user = log.getConfig().getUser();
             if(user.isActive()) {
@@ -122,7 +115,6 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
                 dto.setEmployeeName("Inactive User");
             }
         }
-
         return dto;
     }
 
@@ -133,7 +125,8 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         dto.setTitle(advance.getTitle());
         dto.setRemark(advance.getRemark());
         dto.setAmount(advance.getAmount());
-        dto.setStatus(advance.getStatus() != null ? advance.getStatus().name() : null);
+        dto.setStatus(advance.getStatus());
+        dto.setRepayDate(advance.getRepayDate());
         if (advance.getConfig() != null && advance.getConfig().getUser() != null) {
             dto.setEmployeeName(advance.getConfig().getUser().getFirstName() + " " + advance.getConfig().getUser().getLastName());
             dto.setUsername(advance.getConfig().getUser().getUsername());
@@ -193,39 +186,30 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
 
     @Override
-    public String addSalaryLog(String username, String salaryAmount, Double amountPaid, String statusStr, String remarks) {
-        UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+    public String addSalaryLog(SalaryLogDto salaryLogRequest) {
+        UserEntity user = userRepository.findByUsername(salaryLogRequest.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + salaryLogRequest.getUsername()));
 
         if (!user.isActive()) {
-            throw new UserNotFoundException("Employee is inactive: " + username);
+            throw new UserNotFoundException("Employee is inactive: " + salaryLogRequest.getUsername());
         }
-
 
         EmployeeSalaryConfig config = configRepository.findByUser(user)
-                .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + salaryLogRequest.getUsername()));
 
-        SalaryStatus status = SalaryStatus.PENDING;
-        if (statusStr != null) {
-            try {
-                status = SalaryStatus.valueOf(statusStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status. Allowed: PENDING, PAID, FAILED");
-            }
-        }
         EmployeeSalaryLog log = new EmployeeSalaryLog();
         log.setConfig(config);
-        log.setSalaryMonth(salaryAmount);
-        log.setAmountPaid(amountPaid);
-        log.setStatus(status);
-        if (status == SalaryStatus.DONE) {
-            log.setPayDay(LocalDateTime.now());
-        }
-        log.setRemarks(remarks);
+        log.setSalaryMonth(salaryLogRequest.getSalaryMonth());
+        log.setStartDate(salaryLogRequest.getStartDate());
+        log.setEndDate(salaryLogRequest.getEndDate());
+        log.setGrossSalary(salaryLogRequest.getGrossSalary());
+        log.setNetSalary(salaryLogRequest.getNetSalary());
+        log.setOtherPaymentsTotal(salaryLogRequest.getOtherPaymentsTotal());
+        log.setAdvanceTotal(salaryLogRequest.getAdvanceTotal());
 
         logRepository.save(log);
 
-        return "Salary log added successfully";
+        return "Salary paid successfully";
     }
 
     @Override
@@ -241,9 +225,37 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
             throw new UserNotFoundException("Employee is inactive: " + username);
         }
 
+        LocalDate employeeSince = user.getEmployeeSince();
+        LocalDate today = LocalDate.now();
+
+        // Adjust start date if employee joined during this month
+        if (!employeeSince.isBefore(startDate) && !employeeSince.isAfter(endDate)) {
+            startDate = employeeSince;
+        }
+
+        // Adjust end date if this is the current month
+        YearMonth currentMonth = YearMonth.from(today);
+        if (ym.equals(currentMonth)) {
+            endDate = today.minusDays(1);
+        }
+
+        if (startDate.isAfter(endDate)) {
+            startDate = endDate;
+        }
+
 
         EmployeeSalaryConfig config = configRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
+
+
+        boolean checkIfDone = false;
+        DateRange unpaid = getUnpaidRange(config.getId(), month, startDate, endDate);
+        if(unpaid == null) {
+            checkIfDone = true;
+        } else {
+            startDate = unpaid.start();
+            endDate = unpaid.end();
+        }
 
         double perDayAmount = config.getBaseAmount();
         double bonus = 0;
@@ -263,10 +275,12 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
             for (JsonNode node : root) {
                 String dateStr = node.get("date").asText();
+                String type = node.get("type").asText();
                 LocalDate holidayDate = LocalDate.parse(dateStr);
-                if (holidayDate.getYear() == ym.getYear() && holidayDate.getMonthValue() == ym.getMonthValue()) {
+                if (!holidayDate.isBefore(startDate) && !holidayDate.isAfter(endDate) && type.equalsIgnoreCase("UNPAID")) {
                     holidaysInMonth.add(holidayDate);
                 }
+
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse holiday list", e);
@@ -274,37 +288,66 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
         int holidays = holidaysInMonth.size();
 
-        // Sundays
-        int sundays = 0;
-        for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
-            if (d.getDayOfWeek() == DayOfWeek.SUNDAY) sundays++;
-        }
-
-        int daysInMonth = ym.lengthOfMonth();
-        int workingDays = daysInMonth - sundays - holidays;
-
-        // Attendance categorization
+        // Leaves
         int presents = 0, lates = 0, halfDays = 0, leaves = 0;
+        Set<LocalDate> leaveDates = new HashSet<>();
+        Set<LocalDate> presentDates = new HashSet<>();
+
         for (AttendanceDayResponse r : records) {
             switch (r.getStatus()) {
-                case "PRESENT" -> presents++;
-                case "LATE" -> lates++;
-                case "HALF_DAY" -> halfDays++;
-                case "LEAVE" -> leaves++;
+                case "PRESENT" -> {
+                    presents++;
+                    presentDates.add(r.getDate());
+                }
+                case "LATE" -> {
+                    lates++;
+                    presentDates.add(r.getDate());
+                }
+                case "HALF_DAY" -> {
+                    halfDays++;
+                    presentDates.add(r.getDate());
+                }
+                case "LEAVE" -> {
+                    leaves++;
+                    leaveDates.add(r.getDate());
+                }
             }
         }
+
+        //Sandwitch Sundays
+        int sandwitches = 0;
+        for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+            if (d.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                LocalDate prev = d.minusDays(1);
+                LocalDate next = d.plusDays(1);
+                if (leaveDates.contains(prev) && leaveDates.contains(next)) {
+                    sandwitches++; // Treat Sunday as leave
+                }
+            }
+        }
+        int daysInRange = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        int absents = daysInRange - (presents + lates + halfDays + leaves + holidays+ sandwitches);
+        leaves += sandwitches + absents;
+
+        int daysInMonth = ym.lengthOfMonth();
+
+        int workingDays = daysInRange - holidays;
 
         int presentDays = presents + lates + halfDays;
         double totalMonthSalary = presentDays * perDayAmount;
         double totalSalary = workingDays * perDayAmount;
 
         // Deductions
-        double leaveDeduction = leaves * perDayAmount;
         double halfDayDeduction = halfDays * (perDayAmount / 2);
         double lateDeduction = lates * (perDayAmount * 0.05);
-        double deductionsTotal = leaveDeduction + halfDayDeduction + lateDeduction;
+        double deductionsTotal = halfDayDeduction + lateDeduction;
 
-        double calculatedSalary = totalMonthSalary - deductionsTotal;
+        double presentTotal = presents * perDayAmount;
+        double lateTotal = lates * (perDayAmount - (perDayAmount * 0.05));
+        double halfDayTotal = halfDays * (perDayAmount / 2);
+        double leaveTotal = 0;
+
+        double calculatedSalary =  presentTotal+lateTotal+halfDayTotal+leaveTotal;
         double net = calculatedSalary + bonus;
 
         return SalarySummaryDto.builder()
@@ -314,16 +357,19 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
                 .totalSalary(totalSalary)
                 .presentDays(presentDays)
                 .workingDays(workingDays)
-                .leaveDeduction(leaveDeduction)
                 .halfDayDeduction(halfDayDeduction)
                 .lateDeduction(lateDeduction)
                 .deductionsTotal(deductionsTotal)
                 .calculatedSalary(calculatedSalary)
+                .startDate(startDate)
+                .endDate(endDate)
                 .bonus(bonus)
                 .net(net)
                 .month(month)
                 .daysInMonth(daysInMonth)
                 .totalMonthSalary(totalMonthSalary)
+                .sandwichedLeaves(sandwitches)
+                .checkIfDone(checkIfDone)
                 .build();
     }
 
@@ -366,8 +412,9 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         advance.setTitle(advanceDto.getTitle());
         advance.setRemark(advanceDto.getRemark());
         advance.setAmount(advanceDto.getAmount());
-        advance.setStatus(advanceDto.getStatus() != null ? AdvanceStatus.valueOf(advanceDto.getStatus()) : AdvanceStatus.PENDING);
+        advance.setStatus(advanceDto.getStatus());
         advance.setCreatedAt(LocalDateTime.now());
+        advance.setRepayDate(advanceDto.getRepayDate());
         Advances saved = advancesRepository.save(advance);
         return mapToDto(saved);
     }
@@ -387,8 +434,9 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         existing.setTitle(advanceDto.getTitle());
         existing.setRemark(advanceDto.getRemark());
         existing.setAmount(advanceDto.getAmount());
-        existing.setStatus(advanceDto.getStatus() != null ? AdvanceStatus.valueOf(advanceDto.getStatus()) : existing.getStatus());
+        existing.setStatus(advanceDto.getStatus());
         existing.setUpdatedAt(LocalDateTime.now());
+        existing.setRepayDate(advanceDto.getRepayDate());
         Advances saved = advancesRepository.save(existing);
         return mapToDto(saved);
     }
@@ -400,21 +448,7 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
 
     @Override
     public List<AdvanceDto> getAllAdvances() {
-        return advancesRepository.findAll().stream().map(advance -> {
-            AdvanceDto dto = new AdvanceDto();
-            dto.setId(advance.getId());
-            if (advance.getConfig() != null && advance.getConfig().getUser() != null) {
-                UserEntity user = advance.getConfig().getUser();
-                dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
-                dto.setUsername(user.getUsername());
-            }
-            dto.setAdvanceDate(advance.getAdvanceDate());
-            dto.setTitle(advance.getTitle());
-            dto.setRemark(advance.getRemark());
-            dto.setAmount(advance.getAmount());
-            dto.setStatus(advance.getStatus() != null ? advance.getStatus().name() : null);
-            return dto;
-        }).toList();
+        return advancesRepository.findAll().stream().map(this::mapToDto).toList();
     }
 
     @Override
@@ -422,29 +456,6 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
         Advances advance = advancesRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Advance not found with id " + id));
         return mapToDto(advance);
-    }
-
-    @Override
-    public AdvanceLogDto logAdvancePayment(Long advanceId, AdvanceLogDto logDto) {
-        Advances advance = advancesRepository.findById(advanceId)
-            .orElseThrow(() -> new ResourceNotFoundException("Advance not found with id " + advanceId));
-        AdvanceLog log = new AdvanceLog();
-        log.setAdvance(advance);
-        log.setPaidAmount(logDto.getPaidAmount());
-        log.setPaidDate(LocalDateTime.now());
-        log.setRemarks(logDto.getRemarks());
-        log.setStatus(logDto.getStatus() != null ? AdvanceStatus.valueOf(logDto.getStatus()) : AdvanceStatus.PAID);
-        AdvanceLog savedLog = advanceLogRepository.save(log);
-        advance.setStatus(AdvanceStatus.PAID);
-        advancesRepository.save(advance);
-        return mapToAdvanceLogDto(savedLog);
-    }
-
-    @Override
-    public List<AdvanceLogDto> getAdvanceLogs(Long advanceId) {
-        return advanceLogRepository.findByAdvanceId(advanceId).stream()
-            .map(this::mapToAdvanceLogDto)
-            .toList();
     }
 
     @Override
@@ -489,5 +500,100 @@ public class EmployeeSalaryServiceImpl implements EmployeeSalaryService {
             .map(this::mapToOtherPaymentDto)
             .toList();
     }
+
+    @Override
+    public RepayAdvanceSummaryDto getRepayAmountsByUserName(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        EmployeeSalaryConfig config = configRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
+        List<Advances> pendingAdvances = advancesRepository.findByConfigId(config.getId())
+            .stream()
+            .filter(a -> a.getStatus() == AdvanceStatus.PENDING)
+            .toList();
+        List<AdvanceDto> advanceDtos = pendingAdvances.stream()
+            .map(this::mapToAdvanceDto)
+            .toList();
+        double totalRemaining = advanceDtos.stream()
+            .mapToDouble(AdvanceDto::getAmount)
+            .sum();
+        return new RepayAdvanceSummaryDto(advanceDtos, totalRemaining);
+    }
+
+    private AdvanceDto mapToAdvanceDto(Advances advance) {
+        AdvanceDto dto = new AdvanceDto();
+        dto.setId(advance.getId());
+        dto.setAdvanceDate(advance.getAdvanceDate());
+        dto.setTitle(advance.getTitle());
+        dto.setRemark(advance.getRemark());
+        dto.setAmount(advance.getAmount());
+        dto.setStatus(advance.getStatus());
+        dto.setRepayDate(advance.getRepayDate());
+        if (advance.getConfig() != null && advance.getConfig().getUser() != null) {
+            UserEntity user = advance.getConfig().getUser();
+            dto.setEmployeeName(user.getFirstName() + " " + user.getLastName());
+            dto.setUsername(user.getUsername());
+        }
+        return dto;
+    }
+
+    @Override
+    public OtherPaymentsSummaryDto getOtherPaymentsSummary(String username, String month) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        EmployeeSalaryConfig config = configRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Salary config not found for user " + username));
+
+        List<OtherPayments> otherPayments = otherPaymentsRepository.findByConfigId(config.getId())
+                .stream()
+                .filter(p -> {
+                    YearMonth paymentMonth = YearMonth.from(p.getDate());
+                    YearMonth targetMonth = YearMonth.parse(month);
+                    return paymentMonth.equals(targetMonth);
+                })
+                .toList();
+
+        List<OtherPaymentDto> otherPaymentDtos = otherPayments.stream()
+                .map(this::mapToOtherPaymentDto)
+                .toList();
+        double totalAmount = otherPaymentDtos.stream()
+                .mapToDouble(OtherPaymentDto::getAmount)
+                .sum();
+        return new OtherPaymentsSummaryDto(otherPaymentDtos, totalAmount);
+    }
+
+    public record DateRange(LocalDate start, LocalDate end) {}
+
+    public DateRange getUnpaidRange(Long configId, String salaryMonth, LocalDate startDate, LocalDate endDate) {
+        List<EmployeeSalaryLog> logs = logRepository.findOverlappingLogsInMonth(configId, salaryMonth, startDate, endDate);
+
+        if (logs.isEmpty()) {
+            return new DateRange(startDate, endDate);
+        }
+
+        logs.sort(Comparator.comparing(EmployeeSalaryLog::getStartDate));
+
+        LocalDate remainingStart = startDate;
+        LocalDate remainingEnd = endDate;
+
+        for (EmployeeSalaryLog log : logs) {
+            // If already fully paid
+            if (!remainingStart.isBefore(log.getStartDate()) && !remainingEnd.isAfter(log.getEndDate())) {
+                return null;
+            }
+
+            // If overlaps beginning, shift remainingStart
+            if (!log.getEndDate().isBefore(remainingStart)) {
+                remainingStart = log.getEndDate().plusDays(1);
+            }
+
+            if (remainingStart.isAfter(remainingEnd)) {
+                return null;
+            }
+        }
+
+        return new DateRange(remainingStart, remainingEnd);
+    }
+
 
 }

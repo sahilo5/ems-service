@@ -86,16 +86,10 @@ public class EmployeeSalaryController {
     // 5. Add new log
     @PostMapping("/logs/add")
     public ResponseEntity<ApiResponse<EmployeeSalaryLog>> addSalaryLog(
-            @RequestBody Map<String, String> requestBody
+            @RequestBody SalaryLogDto requestBody
     ) {
         try {
-            String username = requestBody.get("username");
-            String payPeriod = requestBody.get("payPeriod");
-            Double amountPaid = Double.parseDouble(requestBody.get("amountPaid"));
-            String statusStr = requestBody.get("status");
-            String remarks = requestBody.get("remarks");
-
-            String msg = salaryService.addSalaryLog(username, payPeriod, amountPaid, statusStr, remarks);
+            String msg = salaryService.addSalaryLog(requestBody);
 
             return ResponseEntity.ok(new ApiResponse<>(
                     true, msg, null,
@@ -131,32 +125,27 @@ public class EmployeeSalaryController {
     @PostMapping("/advances")
     public ResponseEntity<ApiResponse<AdvanceDto>> createAdvance(@RequestBody AdvanceDto advance) {
         AdvanceDto created = salaryService.createAdvance(advance);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Advance created", created, HttpStatus.OK.value(), LocalDateTime.now()));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance created successfully", created, HttpStatus.OK.value(), LocalDateTime.now()));
     }
 
     @PostMapping("/advances/{id}")
     public ResponseEntity<ApiResponse<AdvanceDto>> updateAdvance(@PathVariable Long id, @RequestBody AdvanceDto advance) {
         AdvanceDto updated = salaryService.updateAdvance(id, advance);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Advance updated", updated, HttpStatus.OK.value(), LocalDateTime.now()));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance updated successfully", updated, HttpStatus.OK.value(), LocalDateTime.now()));
     }
 
     @GetMapping("/advances/{id}")
     public ResponseEntity<ApiResponse<AdvanceDto>> getAdvanceById(@PathVariable Long id) {
         AdvanceDto advance = salaryService.getAdvanceById(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Advance fetched", advance, HttpStatus.OK.value(), LocalDateTime.now()));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Advance fetched successfully", advance, HttpStatus.OK.value(), LocalDateTime.now()));
     }
 
-    @PostMapping("/advances/{id}/log")
-    public ResponseEntity<ApiResponse<AdvanceLogDto>> logAdvancePayment(@PathVariable Long id, @RequestBody AdvanceLogDto log) {
-        AdvanceLogDto createdLog = salaryService.logAdvancePayment(id, log);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Advance payment logged", createdLog, HttpStatus.OK.value(), LocalDateTime.now()));
+    @GetMapping("/get-repayment-summary/{username}")
+    public ResponseEntity<ApiResponse<RepayAdvanceSummaryDto>> getRepayAmountsByUserName(@PathVariable String username) {
+        RepayAdvanceSummaryDto summary = salaryService.getRepayAmountsByUserName(username);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Repayment summary fetched successfully", summary, HttpStatus.OK.value(), LocalDateTime.now()));
     }
 
-    @GetMapping("/advances/{id}/logs")
-    public ResponseEntity<ApiResponse<List<AdvanceLogDto>>> getAdvanceLogs(@PathVariable Long id) {
-        List<AdvanceLogDto> logs = salaryService.getAdvanceLogs(id);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Advance logs fetched", logs, HttpStatus.OK.value(), LocalDateTime.now()));
-    }
 
     @GetMapping("/advances")
     public ResponseEntity<ApiResponse<List<AdvanceDto>>> getAllAdvances() {
@@ -187,6 +176,14 @@ public class EmployeeSalaryController {
     public ResponseEntity<ApiResponse<List<OtherPaymentDto>>> getAllOtherPayments() {
         List<OtherPaymentDto> payments = salaryService.getAllOtherPayments();
         return ResponseEntity.ok(new ApiResponse<>(true, "Other payments fetched", payments, HttpStatus.OK.value(), java.time.LocalDateTime.now()));
+    }
+
+    @PostMapping("/get-other-payments-summary")
+    public ResponseEntity<ApiResponse<OtherPaymentsSummaryDto>> getOtherPaymentsSummary(@RequestBody Map<String, String> requestBody) {
+        String username = requestBody.get("username");
+        String month = requestBody.get("month");
+        OtherPaymentsSummaryDto summary = salaryService.getOtherPaymentsSummary(username, month);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Other payments summary fetched successfully", summary, HttpStatus.OK.value(), LocalDateTime.now()));
     }
 
 }

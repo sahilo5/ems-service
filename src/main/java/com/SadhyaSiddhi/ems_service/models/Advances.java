@@ -28,6 +28,9 @@ public class Advances {
     @Column(nullable = false)
     private LocalDate advanceDate;
 
+    @Column(nullable = true)
+    private LocalDate repayDate;
+
     @Column(nullable = false)
     private String title;
 

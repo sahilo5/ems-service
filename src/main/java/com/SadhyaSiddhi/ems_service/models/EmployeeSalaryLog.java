@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
+
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -22,22 +23,24 @@ public class EmployeeSalaryLog {
     @JoinColumn(name = "config_id", nullable = false)
     private EmployeeSalaryConfig config;
 
-    // Pay period (like 2025-09 for September 2025)
     @Column(nullable = false)
     private String salaryMonth;
 
-    // Final payout (can differ from baseAmount if bonus/deductions applied)
     @Column(nullable = false)
-    private Double amountPaid;
+    private LocalDate startDate;
 
-    // Status of payment
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SalaryStatus status = SalaryStatus.PENDING;
+    private LocalDate endDate;
 
-    // When actually paid
-    private LocalDateTime payDay;
+    @Column(nullable = false)
+    private Double grossSalary;
 
-    // Any additional remarks (bonus reason, deductions, etc.)
-    private String remarks;
+    private Double advanceTotal;
+
+    @Column(nullable = false)
+    private Double netSalary;
+
+    private Double otherPaymentsTotal;
+
+  ;
 }

@@ -19,7 +19,7 @@ public interface EmployeeSalaryService {
     // Logs
     List<SalaryLogDto> getAllLogs();
     List<SalaryLogDto> getLogsByUsernameAndMonth(String username, String salaryMonth);
-    public String addSalaryLog(String username, String payPeriod, Double amountPaid, String statusStr, String remarks);
+    public String addSalaryLog(SalaryLogDto requestBody);
 
     //Summary
     SalarySummaryDto getSalarySummary(String username, String month);
@@ -32,12 +32,12 @@ public interface EmployeeSalaryService {
     List<AdvanceDto> getAllAdvances();
     AdvanceDto getAdvanceById(Long id);
 
-    AdvanceLogDto logAdvancePayment(Long advanceId, AdvanceLogDto log);
-    List<AdvanceLogDto> getAdvanceLogs(Long advanceId);
     // Other Payments
     public OtherPaymentDto createOtherPayment(OtherPaymentDto dto);
     public void deleteOtherPayment(Long id);
     public List<OtherPaymentDto> getAllOtherPayments();
     public OtherPaymentDto updateOtherPayment(Long id, OtherPaymentDto dto);
 
+    RepayAdvanceSummaryDto getRepayAmountsByUserName(String username);
+    public OtherPaymentsSummaryDto getOtherPaymentsSummary(String username, String month);
 }

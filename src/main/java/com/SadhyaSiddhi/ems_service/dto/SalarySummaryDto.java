@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 @Data
@@ -15,10 +16,9 @@ public class SalarySummaryDto {
     private String employeeName;
     private String username;
     private double perDayAmount;
-    private double totalSalary;   // salary for working days
+    private double totalSalary;
     private int presentDays;
     private int workingDays;
-    private double leaveDeduction;
     private double halfDayDeduction;
     private double lateDeduction;
     private double deductionsTotal;
@@ -29,4 +29,8 @@ public class SalarySummaryDto {
     private int daysInMonth;
     private double totalMonthSalary;
     private boolean isPaid;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private int sandwichedLeaves;
+    private boolean checkIfDone;
 }

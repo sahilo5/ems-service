@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -13,7 +14,6 @@ public interface EmployeeSalaryLogRepository extends JpaRepository<EmployeeSalar
     SELECT l FROM EmployeeSalaryLog l 
     WHERE l.config.id = :configId 
       AND l.salaryMonth = :salaryMonth 
-      AND l.status = 'DONE'
 """)
     List<EmployeeSalaryLog> findLogsByConfigAndMonthAndDone(@Param("configId") Long configId,
                                                             @Param("salaryMonth") String salaryMonth);
@@ -26,6 +26,20 @@ public interface EmployeeSalaryLogRepository extends JpaRepository<EmployeeSalar
 """)
     List<EmployeeSalaryLog> findAllActiveLogs();
 
+
+    @Query("""
+    SELECT e 
+    FROM EmployeeSalaryLog e 
+    WHERE e.config.id = :configId 
+      AND e.salaryMonth = :salaryMonth
+      AND (e.startDate <= :endDate AND e.endDate >= :startDate)
+""")
+    List<EmployeeSalaryLog> findOverlappingLogsInMonth(
+            @Param("configId") Long configId,
+            @Param("salaryMonth") String salaryMonth,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 
 
 }
